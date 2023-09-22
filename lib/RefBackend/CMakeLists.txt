@@ -13,6 +13,7 @@ add_mlir_library(TorchMLIRRefBackend
 
   LINK_LIBS PUBLIC
   MLIRIR
+  MLIRLinalgTransforms
   MLIRTransforms
   MLIRMathTransforms
   MLIRLinalgTransforms
