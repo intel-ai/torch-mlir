@@ -1,0 +1,21 @@
+#  To create environment, execute:
+#     conda env create -f conda-dev-env.yml
+#
+#  To activate:
+#     conda activate mlir-dev
+#
+name: mlir-dev
+channels:
+  - conda-forge
+
+dependencies:
+  - gxx_linux-64   12.*
+  - gcc_linux-64   12.*
+  - ccache
+  - sysroot_linux-64 >=2.14
+  - llvmdev     16.*
+  - cmake
+  - make
+  - llvm
+  - python      ==3.11
+  - mkl
