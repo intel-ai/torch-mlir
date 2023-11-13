@@ -268,7 +268,7 @@ def _canon_extra_library(extra_library):
     return extra_library_file_name
 
 
-def _lower_mlir_module(verbose, output_type, module):
+def _lower_mlir_module(verbose, output_type, module, ir_dump_file = None):
     if verbose:
         print("\n====================")
         print("Torch Backend IR")
@@ -280,7 +280,7 @@ def _lower_mlir_module(verbose, output_type, module):
     if output_type == OutputType.TOSA:
         run_pipeline_with_repro_report(
             module, "builtin.module(torch-backend-to-tosa-backend-pipeline)",
-            "Lowering Torch Backend IR -> TOSA Backend IR")
+            "Lowering Torch Backend IR -> TOSA Backend IR", ir_dump_file)
         if verbose:
             print("\n====================")
             print("TOSA Backend IR")
@@ -291,7 +291,7 @@ def _lower_mlir_module(verbose, output_type, module):
         run_pipeline_with_repro_report(
             module,
             "builtin.module(torch-backend-to-linalg-on-tensors-backend-pipeline)",
-            "Lowering Torch Backend IR -> Linalg-on-Tensors Backend IR")
+            "Lowering Torch Backend IR -> Linalg-on-Tensors Backend IR", ir_dump_file)
         if verbose:
             print("\n====================")
             print("LINALG Backend IR")
@@ -302,7 +302,7 @@ def _lower_mlir_module(verbose, output_type, module):
         run_pipeline_with_repro_report(
             module,
             "builtin.module(torch-backend-to-stablehlo-backend-pipeline)",
-            "Lowering Torch Backend IR -> StableHLO Backend IR")
+            "Lowering Torch Backend IR -> StableHLO Backend IR", ir_dump_file)
         if verbose:
             print("\n====================")
             print("StableHLO Backend IR")
