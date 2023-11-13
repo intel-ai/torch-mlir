@@ -29,7 +29,7 @@ from torch_mlir_e2e_test.configs.utils import (
     recursively_convert_to_numpy,
     recursively_convert_from_numpy,
 )
-from torch_mlir_e2e_test.framework import TestConfig, Trace, TraceItem
+from torch_mlir_e2e_test.framework import TestConfig, TestOptions, Trace, TraceItem
 
 DUMPS_ENABLED = True
 
@@ -65,6 +65,8 @@ def _returns_empty_tuple(fx_graph: torch.fx.GraphModule) -> bool:
 def jit(
     model: torch.nn.Module,
     example_args: _example_args,
+    symbol: str,
+    opts: TestOptions,
     output_type: Union[str, "OutputType"] = OutputType.TORCH,
     backend_legal_ops: Optional[Sequence[str]] = None,
     extra_library=None,
@@ -95,9 +97,18 @@ def jit(
         # way of differentiating between the two.
         assert not _returns_empty_tuple(gm), "encountered graph that does not return anything"
 
+        if opts.is_dump_enabled("fx-graph"):
+            with open(f"{model._get_name()}.{symbol}-fx-graph.txt", "w") as f:
+                print(gm.graph, file=f)
+
         nonlocal mlir_module
         *_, model_name, nth_graph = get_aot_compilation_context()
         mlir_module = import_fx_graph_as_func(gm.graph, model_name)
+
+        if opts.is_dump_enabled("torch-mlir"):
+            with open(f"{model._get_name()}.{symbol}-torch.mlir", "w") as f:
+                print(mlir_module, file=f)
+
         return gm
 
     my_backend = aot_autograd(fw_compiler=my_aot_autograd_backend,
@@ -121,15 +132,18 @@ def jit(
             "Lowering TorchFX IR -> Torch Backend IR",
         )
 
-    return _lower_mlir_module(verbose, output_type, mlir_module)
+    ir_file = f"{model._get_name()}.{symbol}-torch-to-linanlg.txt" if opts.is_dump_enabled(
+        "torch-mlir-lowering") else None
+    return _lower_mlir_module(verbose, output_type, mlir_module, ir_file)
 
 
 class TorchDynamoTestConfig(TestConfig):
     """TestConfig that runs the torch.nn.Module with TorchDynamo"""
 
-    def __init__(self, backend):
+    def __init__(self, backend, opts=TestOptions()):
         super().__init__()
         self.backend = backend
+        self.opts = opts
 
     def compile(self, program: torch.nn.Module) -> torch.nn.Module:
         return program
@@ -139,10 +153,26 @@ class TorchDynamoTestConfig(TestConfig):
         for item in trace:
             module = jit(artifact,
                          item.inputs,
+                         item.symbol,
+                         self.opts,
                          output_type="linalg-on-tensors")
-            _dump_repr_to_file(module, 'linalg.mlir')
-            module = self.backend.compile(module)
-            _dump_repr_to_file(module, 'llvm.mlir')
+
+            if self.opts.is_dump_enabled("linalg-mlir"):
+                with open(f"{artifact._get_name()}.{item.symbol}-linalg.mlir", "w") as f:
+                    print(module, file=f)
+
+            ir_file = f"{artifact._get_name()}.{item.symbol}-linalg-to-llvm.txt" if self.opts.is_dump_enabled(
+                "linalg-mlir-lowering") else None
+            module = self.backend.compile(module, ir_file)
+
+            if self.opts.is_dump_enabled("llvm-mlir"):
+                with open(f"{artifact._get_name()}.{item.symbol}-llvm.mlir", "w") as f:
+                    print(module, file=f)
+
+            #_dump_repr_to_file(module, 'linalg.mlir')
+            #module = self.backend.compile(module)
+            #_dump_repr_to_file(module, 'llvm.mlir')
+
             backend_module = self.backend.load(module)
             params = {
                 **dict(artifact.named_parameters(remove_duplicate=False)),
@@ -162,6 +192,10 @@ class TorchDynamoTestConfig(TestConfig):
                 print("Done")
 
             output = refine_result_type(outputs)
+
+            if self.opts.is_dump_enabled("obj"):
+                backend_module.ee.dump_to_object_file(f"{artifact._get_name()}.{item.symbol}.o")
+
             result.append(
                 TraceItem(symbol=item.symbol,
                           inputs=item.inputs,
