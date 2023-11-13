@@ -190,7 +190,7 @@ class RefBackendLinalgOnTensorsBackend(LinalgOnTensorsBackend):
     def __init__(self):
         super().__init__()
 
-    def compile(self, imported_module: Module):
+    def compile(self, imported_module: Module, ir_file: str = None):
         """Compiles an imported module, with a flat list of functions.
         The module is expected to be in linalg-on-tensors + scalar code form.
         TODO: More clearly define the backend contract. Generally this will
@@ -206,8 +206,7 @@ class RefBackendLinalgOnTensorsBackend(LinalgOnTensorsBackend):
         run_pipeline_with_repro_report(
             imported_module, LOWERING_PIPELINE,
             "Lowering Linalg-on-Tensors IR to LLVM with RefBackend",
-            enable_ir_printing=False,
-        )
+            enable_ir_printing=False, ir_file=ir_file)
         return imported_module
 
     def load(self, module) -> RefBackendInvoker:
