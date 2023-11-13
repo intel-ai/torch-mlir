@@ -95,6 +95,17 @@ def clone_trace(trace: Trace) -> Trace:
 # this type.
 CompiledArtifact = TypeVar('CompiledArtifact')
 
+class TestOptions:
+    """Test run options."""
+
+    dump_choices = ["all", "fx-graph", "torch-mlir", "linalg-mlir", "llvm-mlir", "torch-mlir-lowering", "linalg-mlir-lowering", "obj"]
+
+    def __init__(self, dumps: List[str] = []):
+        self.dumps = {opt for opt in dumps}
+
+    def is_dump_enabled(self, dump: str):
+        return dump in self.dumps or "all" in self.dumps
+
 class TestConfig(abc.ABC):
     """The interface implemented by backends to run tests.
 
