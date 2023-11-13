@@ -31,6 +31,14 @@ from torch_mlir_e2e_test.configs.utils import (
 )
 from torch_mlir_e2e_test.framework import TestConfig, TestOptions, Trace, TraceItem
 
+DUMPS_ENABLED = True
+
+def _dump_repr_to_file(representation, filename: str):
+    if not DUMPS_ENABLED:
+        return
+
+    with open(filename, 'w') as f:
+        f.write(str(representation))
 
 def refine_result_type(_result):
     if isinstance(_result, tuple):
@@ -116,6 +124,7 @@ def jit(
         option_string = ("{backend-legal-ops=" + ",".join(backend_legal_ops) +
                          " extra-library=" + extra_library_file_name + "}")
         assert mlir_module is not None
+        _dump_repr_to_file(mlir_module, 'forward.mlir')
         run_pipeline_with_repro_report(
             mlir_module,
             # f"builtin.module(torch-function-to-torch-backend-pipeline{option_string})",
@@ -160,6 +169,10 @@ class TorchDynamoTestConfig(TestConfig):
                 with open(f"{artifact._get_name()}.{item.symbol}-llvm.mlir", "w") as f:
                     print(module, file=f)
 
+            #_dump_repr_to_file(module, 'linalg.mlir')
+            #module = self.backend.compile(module)
+            #_dump_repr_to_file(module, 'llvm.mlir')
+
             backend_module = self.backend.load(module)
             params = {
                 **dict(artifact.named_parameters(remove_duplicate=False)),
@@ -172,6 +185,12 @@ class TorchDynamoTestConfig(TestConfig):
                                                             item.inputs)
             outputs = getattr(backend_module,
                               artifact.__class__.__name__)(*numpy_inputs)
+
+            if DUMPS_ENABLED:
+                print("Dumping binary module to object file...")
+                backend_module.ee.dump_to_object_file(f"{item.symbol}.o")
+                print("Done")
+
             output = refine_result_type(outputs)
 
             if self.opts.is_dump_enabled("obj"):
