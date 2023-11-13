@@ -25,9 +25,23 @@ def get_module_name_for_debug_dump(module):
 class TorchMlirCompilerError(Exception):
     pass
 
+class StderrToFile:
+    def __init__(self, file: str):
+        self._file_name = file
+
+    def __enter__(self):
+        self._fd = os.open(self._file_name, os.O_WRONLY | os.O_CREAT)
+        self._old_stderr_fd = os.dup(2)
+        os.dup2(self._fd, 2)
+
+    def __exit__(self, *args):
+        os.dup2(self._old_stderr_fd, 2)
+        os.close(self._fd)
+
 def run_pipeline_with_repro_report(module,
                                    pipeline: str,
-                                   description: str):
+                                   description: str,
+                                   ir_dump_file: str = None):
     """Runs `pipeline` on `module`, with a nice repro report if it fails."""
     module_name = get_module_name_for_debug_dump(module)
     try:
@@ -38,7 +52,14 @@ def run_pipeline_with_repro_report(module,
         # Lower module in place to make it ready for compiler backends.
         with module.context:
             pm = PassManager.parse(pipeline)
-            pm.run(module.operation)
+            if ir_dump_file is not None:
+                module.context.enable_multithreading(False)
+                pm.enable_ir_printing()
+                with StderrToFile(ir_dump_file):
+                    pm.run(module.operation)
+                module.context.enable_multithreading(True)
+            else:
+                pm.run(module.operation)
     except Exception as e:
         # TODO: More robust.
         # - don't arbitrarily clutter up /tmp. When a test suite has many

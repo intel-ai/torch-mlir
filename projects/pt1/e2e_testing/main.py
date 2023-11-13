@@ -7,7 +7,7 @@ import argparse
 import re
 import sys
 
-from torch_mlir_e2e_test.framework import run_tests
+from torch_mlir_e2e_test.framework import run_tests, TestOptions
 from torch_mlir_e2e_test.reporting import report_results
 from torch_mlir_e2e_test.registry import GLOBAL_TEST_REGISTRY
 
@@ -77,10 +77,26 @@ which make it easier to attach a debugger or get a stack trace.""")
                         default=False,
                         action="store_true",
                         help="return exit code 0 even if the test fails to unblock pipeline")
+    parser.add_argument("--dump",
+                        choices=TestOptions.dump_choices,
+                        default=[],
+                        action="append",
+                        help=f"""
+Available options:
+"all": enable all dumps
+"fx-graph": dump input FX Graph
+"torch-mlir": dump generated Torch MLIR module
+"linalg-mlir": dump module lowered to linalg dialect
+"llvm-mlir": dump module lowered to LLVM dialect
+"torch-mlir-lowering": dump after-pass results in Torch to Linalg pipeline
+"linalg-mlir-lowering": dump after-pass results in Linalg to LLVM pipeline
+"obj": dump compiled code to object file
+""")
     return parser
 
 def main():
     args = _get_argparse().parse_args()
+    opts = TestOptions(dumps=args.dump)
 
     all_test_unique_names = set(
         test.unique_name for test in GLOBAL_TEST_REGISTRY)
@@ -111,7 +127,7 @@ def main():
         xfail_set = LTC_XFAIL_SET
         crashing_set = LTC_CRASHING_SET
     elif args.config == "torchdynamo":
-        config = TorchDynamoTestConfig(RefBackendLinalgOnTensorsBackend())
+        config = TorchDynamoTestConfig(RefBackendLinalgOnTensorsBackend(), opts=opts)
         xfail_set = TORCHDYNAMO_XFAIL_SET
         crashing_set = TORCHDYNAMO_CRASHING_SET
 
