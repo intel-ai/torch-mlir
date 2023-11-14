@@ -80,8 +80,8 @@ def get_ctype_func(func_name):
 
 class RefBackendInvoker:
 
-    def __init__(self, module):
-        self.ee = ExecutionEngine(module)
+    def __init__(self, module, shared_libs=None):
+        self.ee = ExecutionEngine(module, shared_libs=shared_libs)
         self.result = None
 
         return_funcs = get_return_funcs(module)
