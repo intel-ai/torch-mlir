@@ -154,4 +154,15 @@ def ConvertTorchToStablehlo : Pass<"convert-torch-to-stablehlo", "func::FuncOp">
 }
 #endif
 
+def ConvertLinalgOpsToKernelCalls
+    : Pass<"convert-linalg-ops-to-kernel-calls", "ModuleOp"> {
+  let summary = "Lower linalg.matmul operation to kernel call.";
+  let constructor = [{
+    mlir::torch::createConvertLinalgOpsToKernelCallsPass()
+  }];
+  let description = [{
+    This pass replaces linalg.matmul operations with calls to the runtime library.
+  }];
+}
+
 #endif // TORCHMLIR_CONVERSION_PASSES

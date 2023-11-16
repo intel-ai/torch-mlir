@@ -163,13 +163,6 @@ if(MLIR_ENABLE_BINDINGS_PYTHON)
   mlir_configure_python_dev_packages()
 endif()
 
-add_subdirectory(include)
-add_subdirectory(lib)
-add_subdirectory(tools)
-
-add_custom_target(check-torch-mlir-all)
-add_dependencies(check-torch-mlir-all check-torch-mlir)
-
 if(MLIR_ENABLE_BINDINGS_PYTHON)
   # If parent projects want to configure where to place the python packages,
   # respect that.
@@ -177,6 +170,13 @@ if(MLIR_ENABLE_BINDINGS_PYTHON)
     set(TORCH_MLIR_PYTHON_PACKAGES_DIR "${CMAKE_CURRENT_BINARY_DIR}/python_packages")
   endif()
 endif()
+
+add_subdirectory(include)
+add_subdirectory(lib)
+add_subdirectory(tools)
+
+add_custom_target(check-torch-mlir-all)
+add_dependencies(check-torch-mlir-all check-torch-mlir)
 
 add_subdirectory(test)
 

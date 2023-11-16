@@ -1,3 +1,4 @@
+add_subdirectory(LinalgToKernelCalls)
 add_subdirectory(TorchToLinalg)
 add_subdirectory(TorchToSCF)
 add_subdirectory(TorchToArith)
@@ -10,7 +11,8 @@ add_subdirectory(TorchConversionToMLProgram)
 add_subdirectory(Utils)
 
 # TODO: Automate this with add_torch_mlir_conversion_library.
-set(linked_libs TorchMLIRTorchToLinalg
+set(linked_libs TorchMLIRLinalgToKernelCalls
+                TorchMLIRTorchToLinalg
                 TorchMLIRTorchToSCF
                 TorchMLIRTorchToArith
                 TorchMLIRTorchToTosa
