@@ -15,6 +15,7 @@
 
 #include "torch-mlir/Conversion/TorchConversionToMLProgram/TorchConversionToMLProgram.h"
 #include "torch-mlir/Conversion/TorchToArith/TorchToArith.h"
+#include "torch-mlir/Conversion/LinalgToKernelCalls/LinalgToKernelCalls.h"
 #include "torch-mlir/Conversion/TorchToLinalg/TorchToLinalg.h"
 #include "torch-mlir/Conversion/TorchToSCF/TorchToSCF.h"
 #include "torch-mlir/Conversion/TorchToTMTensor/TorchToTMTensor.h"

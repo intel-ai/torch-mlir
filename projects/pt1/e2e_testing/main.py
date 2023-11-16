@@ -26,6 +26,7 @@ from torch_mlir_e2e_test.configs import (
 
 from torch_mlir_e2e_test.linalg_on_tensors_backends.refbackend import RefBackendLinalgOnTensorsBackend
 from torch_mlir_e2e_test.onnx_backends.linalg_on_tensors import LinalgOnTensorsOnnxBackend
+from torch_mlir_e2e_test.linalg_on_tensors_backends.cpuprotobackend import CpuProtoLinalgOnTensorsBackend
 from torch_mlir_e2e_test.tosa_backends.linalg_on_tensors import LinalgOnTensorsTosaBackend
 from torch_mlir_e2e_test.stablehlo_backends.linalg_on_tensors import LinalgOnTensorsStablehloBackend
 
@@ -48,7 +49,7 @@ from torch_mlir_e2e_test.test_suite import register_all_tests
 register_all_tests()
 
 def _get_argparse():
-    config_choices = ["native_torch", "torchscript", "linalg", "stablehlo", "make_fx_tosa", "tosa", "lazy_tensor_core", "torchdynamo", "onnx"]
+    config_choices = ["native_torch", "torchscript", "linalg", "stablehlo", "make_fx_tosa", "tosa", "lazy_tensor_core", "torchdynamo", "onnx", "cpuproto"]
     parser = argparse.ArgumentParser(description="Run torchscript e2e tests.")
     parser.add_argument("-c", "--config",
         choices=config_choices,
@@ -99,11 +100,15 @@ Available options:
 "linalg-mlir-lowering": dump after-pass results in Linalg to LLVM pipeline
 "obj": dump compiled code to object file
 """)
+    parser.add_argument("--use-kernels",
+                        default=False,
+                        action="store_true",
+                        help="Enable linalg ops replacement with runtime library kernel calls.")
     return parser
 
 def main():
     args = _get_argparse().parse_args()
-    opts = TestOptions(dumps=args.dump)
+    opts = TestOptions(dumps=args.dump, use_kernels=args.use_kernels)
 
     all_test_unique_names = set(
         test.unique_name for test in GLOBAL_TEST_REGISTRY)
@@ -145,6 +150,10 @@ def main():
         config = OnnxBackendTestConfig(LinalgOnTensorsOnnxBackend())
         xfail_set = ONNX_XFAIL_SET
         crashing_set = ONNX_CRASHING_SET
+    elif args.config == "cpuproto":
+        config = TorchDynamoTestConfig(CpuProtoLinalgOnTensorsBackend(opts), opts=opts)
+        xfail_set = TORCHDYNAMO_XFAIL_SET
+        crashing_set = TORCHDYNAMO_CRASHING_SET
 
     do_not_attempt = set(args.crashing_tests_to_not_attempt_to_run_and_a_bug_is_filed or []).union(crashing_set)
     available_tests = [test for test in GLOBAL_TEST_REGISTRY if test.unique_name not in do_not_attempt]

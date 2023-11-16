@@ -3,6 +3,7 @@ torch_mlir_enable_werror()
 add_subdirectory(CAPI)
 add_subdirectory(Conversion)
 add_subdirectory(Dialect)
+add_subdirectory(Runtime)
 
 set(LinkedLibs
   MLIRComplexDialect
