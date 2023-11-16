@@ -13,6 +13,7 @@
 #include "torch-mlir/Conversion/TorchToStablehlo/TorchToStablehlo.h"
 #endif // TORCH_MLIR_ENABLE_STABLEHLO
 
+#include "torch-mlir/Conversion/LinalgToKernelCalls/LinalgToKernelCalls.h"
 #include "torch-mlir/Conversion/TorchToLinalg/TorchToLinalg.h"
 #include "torch-mlir/Conversion/TorchToSCF/TorchToSCF.h"
 #include "torch-mlir/Conversion/TorchToArith/TorchToArith.h"

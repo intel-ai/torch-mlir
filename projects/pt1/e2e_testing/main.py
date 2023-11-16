@@ -24,6 +24,7 @@ from torch_mlir_e2e_test.configs import (
 )
 
 from torch_mlir_e2e_test.linalg_on_tensors_backends.refbackend import RefBackendLinalgOnTensorsBackend
+from torch_mlir_e2e_test.linalg_on_tensors_backends.cpuprotobackend import CpuProtoLinalgOnTensorsBackend
 from torch_mlir_e2e_test.tosa_backends.linalg_on_tensors import LinalgOnTensorsTosaBackend
 
 from .xfail_sets import (
@@ -43,7 +44,7 @@ from torch_mlir_e2e_test.test_suite import register_all_tests
 register_all_tests()
 
 def _get_argparse():
-    config_choices = ["native_torch", "torchscript", "linalg", "make_fx_tosa", "tosa", "lazy_tensor_core", "torchdynamo"]
+    config_choices = ["native_torch", "torchscript", "linalg", "make_fx_tosa", "tosa", "lazy_tensor_core", "torchdynamo", "cpuproto"]
     parser = argparse.ArgumentParser(description="Run torchscript e2e tests.")
     parser.add_argument("-c", "--config",
         choices=config_choices,
@@ -92,11 +93,15 @@ Available options:
 "linalg-mlir-lowering": dump after-pass results in Linalg to LLVM pipeline
 "obj": dump compiled code to object file
 """)
+    parser.add_argument("--use-kernels",
+                        default=False,
+                        action="store_true",
+                        help="Enable linalg ops replacement with runtime library kernel calls.")
     return parser
 
 def main():
     args = _get_argparse().parse_args()
-    opts = TestOptions(dumps=args.dump)
+    opts = TestOptions(dumps=args.dump, use_kernels=args.use_kernels)
 
     all_test_unique_names = set(
         test.unique_name for test in GLOBAL_TEST_REGISTRY)
@@ -128,6 +133,10 @@ def main():
         crashing_set = LTC_CRASHING_SET
     elif args.config == "torchdynamo":
         config = TorchDynamoTestConfig(RefBackendLinalgOnTensorsBackend(), opts=opts)
+        xfail_set = TORCHDYNAMO_XFAIL_SET
+        crashing_set = TORCHDYNAMO_CRASHING_SET
+    elif args.config == "cpuproto":
+        config = TorchDynamoTestConfig(CpuProtoLinalgOnTensorsBackend(opts), opts=opts)
         xfail_set = TORCHDYNAMO_XFAIL_SET
         crashing_set = TORCHDYNAMO_CRASHING_SET
 
