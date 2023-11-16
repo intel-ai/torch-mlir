@@ -1,6 +1,8 @@
 #include <cstdint>
 #include <iostream>
 
+#include "mkl.h"
+
 template <typename T> struct tensor {
   T *buffer;         // Allocated memory, used for deallocation only
   T *data;           // Aligned data.
@@ -15,8 +17,8 @@ template <typename T> struct tensor {
 
 namespace {
 template <typename T>
-void test_matmul(int64_t lhs_rank, tensor<T> *lhs, int64_t rhs_rank,
-                 tensor<T> *rhs, int64_t res_rank, tensor<T> *res) {
+void trace_matmul_call(int64_t lhs_rank, tensor<T> *lhs, int64_t rhs_rank,
+                       tensor<T> *rhs, int64_t res_rank, tensor<T> *res) {
   std::cout << "test_matmul" << std::endl;
   std::cout << "  lhs_rank=" << lhs_rank << std::endl
             << "  rhs_rank=" << rhs_rank << std::endl
@@ -33,6 +35,13 @@ void test_matmul(int64_t lhs_rank, tensor<T> *lhs, int64_t rhs_rank,
             << res->offset << ", [" << res->rank[0] << ", " << res->rank[1]
             << "], [" << res->stride[0] << ", " << res->stride[1] << "]}"
             << std::endl;
+}
+
+template <typename T>
+void test_matmul(int64_t lhs_rank, tensor<T> *lhs, int64_t rhs_rank,
+                 tensor<T> *rhs, int64_t res_rank, tensor<T> *res) {
+  trace_matmul_call(lhs_rank, lhs, rhs_rank, rhs, res_rank, res);
+  std::cout << "Using naive implementation." << std::endl;
   for (int64_t i = 0; i < lhs->rank[0]; ++i) {
     for (int64_t j = 0; j < rhs->rank[1]; ++j) {
       for (int64_t k = 0; k < rhs->rank[0]; ++k) {
@@ -52,11 +61,25 @@ void test_matmul(int64_t lhs_rank, tensor<T> *lhs, int64_t rhs_rank,
 extern "C" void matmul_kernel_f32(int64_t lhs_rank, tensor<float> *lhs,
                                   int64_t rhs_rank, tensor<float> *rhs,
                                   int64_t res_rank, tensor<float> *res) {
-  test_matmul(lhs_rank, lhs, rhs_rank, rhs, res_rank, res);
+  // trace_matmul_call(lhs_rank, lhs, rhs_rank, rhs, res_rank, res);
+  // std::cout << "Using MKL implementation." << std::endl;
+  float alpha = 1.0;
+  float beta = 1.0;
+  auto m = lhs->rank[0];
+  auto k = lhs->rank[1];
+  auto n = rhs->rank[1];
+  cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, k, alpha,
+              lhs->data, k, rhs->data, n, beta, res->data, n);
 }
 
 extern "C" void matmul_kernel_f64(int64_t lhs_rank, tensor<double> *lhs,
                                   int64_t rhs_rank, tensor<double> *rhs,
                                   int64_t res_rank, tensor<double> *res) {
-  test_matmul(lhs_rank, lhs, rhs_rank, rhs, res_rank, res);
+  double alpha = 1.0;
+  double beta = 1.0;
+  auto m = lhs->rank[0];
+  auto k = lhs->rank[1];
+  auto n = rhs->rank[1];
+  cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, k, alpha,
+              lhs->data, k, rhs->data, n, beta, res->data, n);
 }
