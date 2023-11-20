@@ -27,6 +27,9 @@ from itertools import repeat
 import sys
 import traceback
 
+import time
+import functools
+
 import torch
 import multiprocess as mp
 
@@ -95,17 +98,79 @@ def clone_trace(trace: Trace) -> Trace:
 # this type.
 CompiledArtifact = TypeVar('CompiledArtifact')
 
+class DebugTimer:
+    """Basic debug timer
+    Usage examples:
+    1.
+        t = DebugTimer('MyName', logger=print)
+        t.start()
+        doStuff(...)
+        t.stop()
+
+    2.
+        @DebugTimer('run')
+        def run(...):
+            doStuff(...)
+
+    3.
+        with DebugTimer('withSmth'):
+            doStuff(...)
+    """
+    def __init__(self, name=None, logger=print) -> None:
+        self.begin = None
+        self.elapsed = None
+        self.logger = logger
+        self.name = name
+
+    def start(self) -> None:
+        if self.begin is not None:
+            raise RuntimeError("Attempt to start a running timer.")
+        self.begin = time.perf_counter_ns()
+
+    def stop(self):
+        if self.begin is None:
+            raise RuntimeError("Attempt to stop a non-running timer.")
+        self.elapsed = time.perf_counter_ns() - self.begin
+        self.begin = None
+
+        self._report()
+        return self.elapsed
+
+    def _report(self):
+        if self.logger:
+            rep_line = "elapsed " + "{:.4f}".format(float(self.elapsed) / 10e6) + " ms"
+            rep_line = self.name + ": " + rep_line if self.name is not None else rep_line
+            self.logger(rep_line)
+
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop()
+
+    def __call__(self, func):
+        @functools.wraps(func)
+        def wrapper_debug_timer(*args, **kwargs):
+            with self:
+                return func(*args, **kwargs)
+        return wrapper_debug_timer
+
 class TestOptions:
     """Test run options."""
 
     dump_choices = ["all", "fx-graph", "torch-mlir", "linalg-mlir", "llvm-mlir", "torch-mlir-lowering", "linalg-mlir-lowering", "obj"]
 
-    def __init__(self, *, dumps: List[str] = [], use_kernels=False):
+    def __init__(self, *, dumps: List[str] = [], use_kernels=False, debug_timer=False):
         self.dumps = {opt for opt in dumps}
         self.use_kernels = use_kernels
+        self.debug_timer = debug_timer
 
     def is_dump_enabled(self, dump: str):
         return dump in self.dumps or "all" in self.dumps
+
+    def is_debug_timer_enabled(self):
+        return self.debug_timer
 
 class TestConfig(abc.ABC):
     """The interface implemented by backends to run tests.

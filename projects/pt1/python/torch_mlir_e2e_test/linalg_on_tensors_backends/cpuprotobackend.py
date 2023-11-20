@@ -10,7 +10,7 @@ from torch_mlir.passmanager import *
 from torch_mlir.execution_engine import *
 from torch_mlir.runtime import *
 from torch_mlir.compiler_utils import run_pipeline_with_repro_report
-from torch_mlir_e2e_test.framework import TestOptions
+from torch_mlir_e2e_test.framework import TestOptions, DebugTimer
 
 from .abc import LinalgOnTensorsBackend
 from .refbackend import RefBackendInvoker
@@ -118,14 +118,15 @@ class CpuProtoLinalgOnTensorsBackend(LinalgOnTensorsBackend):
           An opaque, backend specific compiled artifact object that can be
           passed to `load`.
         """
-
-        run_pipeline_with_repro_report(
-            imported_module, _build_lowering_pipeline(self._opts),
-            "Lowering Linalg-on-Tensors IR to LLVM with RefBackend", ir_file)
+        with DebugTimer('CpuProtoLinalgOnTensorsBackend.compile()', logger=print if self._opts.debug_timer else None):
+            run_pipeline_with_repro_report(
+                imported_module, _build_lowering_pipeline(self._opts),
+                "Lowering Linalg-on-Tensors IR to LLVM with RefBackend", ir_file)
         return imported_module
 
     def load(self, module) -> RefBackendInvoker:
         """Loads a compiled artifact into the runtime."""
-
-        return RefBackendInvoker(module,
-                                 shared_libs=_collect_shared_libs(self._opts))
+        with DebugTimer('CpuProtoLinalgOnTensorsBackend.load()', logger=print if self._opts.debug_timer else None):
+            invoker = RefBackendInvoker(module,
+                                    shared_libs=_collect_shared_libs(self._opts))
+        return invoker

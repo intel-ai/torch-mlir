@@ -29,7 +29,7 @@ from torch_mlir_e2e_test.configs.utils import (
     recursively_convert_to_numpy,
     recursively_convert_from_numpy,
 )
-from torch_mlir_e2e_test.framework import TestConfig, TestOptions, Trace, TraceItem
+from torch_mlir_e2e_test.framework import TestConfig, TestOptions, Trace, TraceItem, DebugTimer
 
 DUMPS_ENABLED = True
 
@@ -150,54 +150,52 @@ class TorchDynamoTestConfig(TestConfig):
 
     def run(self, artifact: torch.nn.Module, trace: Trace) -> Trace:
         result: Trace = []
-        for item in trace:
-            module = jit(artifact,
-                         item.inputs,
-                         item.symbol,
-                         self.opts,
-                         output_type="linalg-on-tensors")
+        timing_logger = print if self.opts.is_debug_timer_enabled() else None
+        with DebugTimer("TorchDynamoTestConfig.run()", logger=timing_logger):
+            for item in trace:
+                with DebugTimer("JIT", logger=timing_logger):
+                    module = jit(artifact,
+                                item.inputs,
+                                item.symbol,
+                                self.opts,
+                                output_type="linalg-on-tensors")
 
-            if self.opts.is_dump_enabled("linalg-mlir"):
-                with open(f"{artifact._get_name()}.{item.symbol}-linalg.mlir", "w") as f:
-                    print(module, file=f)
+                if self.opts.is_dump_enabled("linalg-mlir"):
+                    with open(f"{artifact._get_name()}.{item.symbol}-linalg.mlir", "w") as f:
+                        print(module, file=f)
 
-            ir_file = f"{artifact._get_name()}.{item.symbol}-linalg-to-llvm.txt" if self.opts.is_dump_enabled(
-                "linalg-mlir-lowering") else None
-            module = self.backend.compile(module, ir_file)
+                ir_file = f"{artifact._get_name()}.{item.symbol}-linalg-to-llvm.txt" if self.opts.is_dump_enabled(
+                    "linalg-mlir-lowering") else None
+                with DebugTimer("Backend.compile()", logger=timing_logger):
+                    module = self.backend.compile(module, ir_file)
 
-            if self.opts.is_dump_enabled("llvm-mlir"):
-                with open(f"{artifact._get_name()}.{item.symbol}-llvm.mlir", "w") as f:
-                    print(module, file=f)
+                if self.opts.is_dump_enabled("llvm-mlir"):
+                    with open(f"{artifact._get_name()}.{item.symbol}-llvm.mlir", "w") as f:
+                        print(module, file=f)
 
-            #_dump_repr_to_file(module, 'linalg.mlir')
-            #module = self.backend.compile(module)
-            #_dump_repr_to_file(module, 'llvm.mlir')
+                with DebugTimer("Backend.load()", logger=timing_logger):
+                    backend_module = self.backend.load(module)
+                params = {
+                    **dict(artifact.named_parameters(remove_duplicate=False)),
+                    **dict(artifact.named_buffers(remove_duplicate=False)),
+                }
+                params_flat, params_spec = pytree.tree_flatten(params)
+                params_flat = list(params_flat)
+                with torch.no_grad():
+                    with DebugTimer("recursively_convert_to_numpy", logger=timing_logger):
+                        numpy_inputs = recursively_convert_to_numpy(params_flat +
+                                                                    item.inputs)
+                outputs = getattr(backend_module,
+                                artifact.__class__.__name__)(*numpy_inputs)
 
-            backend_module = self.backend.load(module)
-            params = {
-                **dict(artifact.named_parameters(remove_duplicate=False)),
-                **dict(artifact.named_buffers(remove_duplicate=False)),
-            }
-            params_flat, params_spec = pytree.tree_flatten(params)
-            params_flat = list(params_flat)
-            with torch.no_grad():
-                numpy_inputs = recursively_convert_to_numpy(params_flat +
-                                                            item.inputs)
-            outputs = getattr(backend_module,
-                              artifact.__class__.__name__)(*numpy_inputs)
+                with DebugTimer("refine_result_type", logger=timing_logger):
+                    output = refine_result_type(outputs)
 
-            if DUMPS_ENABLED:
-                print("Dumping binary module to object file...")
-                backend_module.ee.dump_to_object_file(f"{item.symbol}.o")
-                print("Done")
+                if self.opts.is_dump_enabled("obj"):
+                    backend_module.ee.dump_to_object_file(f"{artifact._get_name()}.{item.symbol}.o")
 
-            output = refine_result_type(outputs)
-
-            if self.opts.is_dump_enabled("obj"):
-                backend_module.ee.dump_to_object_file(f"{artifact._get_name()}.{item.symbol}.o")
-
-            result.append(
-                TraceItem(symbol=item.symbol,
-                          inputs=item.inputs,
-                          output=output))
+                result.append(
+                    TraceItem(symbol=item.symbol,
+                            inputs=item.inputs,
+                            output=output))
         return result
