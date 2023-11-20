@@ -21,6 +21,8 @@
 #include "torch-mlir/Conversion/TorchToTMTensor/TorchToTMTensor.h"
 #include "torch-mlir/Conversion/TorchToTensor/TorchToTensor.h"
 #include "torch-mlir/Conversion/TorchToTosa/TorchToTosa.h"
+#include "torch-mlir/Conversion/TorchConversionToMLProgram/TorchConversionToMLProgram.h"
+#include "torch-mlir/Conversion/FuseLinalg/FuseLinalg.h"
 
 //===----------------------------------------------------------------------===//
 // Pass registration

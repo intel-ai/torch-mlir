@@ -21,6 +21,7 @@
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/Math/IR/Math.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
+#include "mlir/Dialect/Utils/IndexingUtils.h"
 #include "mlir/IR/Matchers.h"
 #include "torch-mlir/Conversion/TorchToLinalg/Utils.h"
 #include "torch-mlir/Conversion/Utils/Utils.h"
@@ -1405,39 +1406,21 @@ public:
     auto loc = op.getLoc();
 
     SmallVector<Value> outputDims;
-    for (auto i = 0; i < inputRank; i++)
+    for (auto i = 0; i < inputRank; i++) {
       outputDims.push_back(getDimOp(rewriter, loc, adaptor.getSelf(), i));
+    }
     std::swap(outputDims[dim0], outputDims[dim1]);
 
     Value outVector = rewriter.create<tensor::EmptyOp>(
         loc, getAsOpFoldResult(outputDims), elementType);
-    SmallVector<AffineExpr> idExprs;
-    SmallVector<AffineExpr> swapExprs;
-    for (auto i = 0; i < inputRank; i++)
-      idExprs.push_back(getAffineDimExpr(i, rewriter.getContext()));
-    for (auto i = 0; i < inputRank; i++) {
-      if (i == dim0)
-        swapExprs.push_back(idExprs[dim1]);
-      else if (i == dim1)
-        swapExprs.push_back(idExprs[dim0]);
-      else
-        swapExprs.push_back(idExprs[i]);
-    }
 
-    SmallVector<AffineMap> indexingMaps = {
-        AffineMap::get(inputRank, 0, idExprs, op.getContext()),
-        AffineMap::get(inputRank, 0, swapExprs, op.getContext())};
-    SmallVector<utils::IteratorType> iteratorTypes(
-        inputRank, utils::IteratorType::parallel);
-    auto transpose = rewriter
-                         .create<linalg::GenericOp>(
-                             loc, outVector.getType(), inVector, outVector,
-                             indexingMaps, iteratorTypes,
-                             [](OpBuilder &b, Location loc, ValueRange args) {
-                               b.create<linalg::YieldOp>(loc, args[0]);
-                             })
-                         .getResult(0);
-    rewriter.replaceOpWithNewOp<tensor::CastOp>(op, outType, transpose);
+    SmallVector<int64_t> dense({dim1, dim0});
+
+    auto transpose =
+        rewriter.create<linalg::TransposeOp>(loc, inVector, outVector, dense);
+
+    rewriter.replaceOpWithNewOp<tensor::CastOp>(op, outType,
+                                                transpose.getResult()[0]);
     return success();
   }
 };
