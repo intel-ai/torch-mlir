@@ -61,6 +61,10 @@ Meaning of options:
     parser.add_argument("-f", "--filter", default=".*", help="""
 Regular expression specifying which tests to include in this run.
 """)
+    parser.add_argument("-l", "--list_tests",
+                        default=False,
+                        action="store_true",
+                        help="List all available tests and exit.")
     parser.add_argument("-v", "--verbose",
                         default=False,
                         action="store_true",
@@ -97,11 +101,15 @@ Available options:
                         default=False,
                         action="store_true",
                         help="Enable linalg ops replacement with runtime library kernel calls.")
+    parser.add_argument("--enable-timer",
+                        default=False,
+                        action="store_true",
+                        help="Enable debug timings collection.")
     return parser
 
 def main():
     args = _get_argparse().parse_args()
-    opts = TestOptions(dumps=args.dump, use_kernels=args.use_kernels)
+    opts = TestOptions(dumps=args.dump, use_kernels=args.use_kernels, debug_timer=args.enable_timer)
 
     all_test_unique_names = set(
         test.unique_name for test in GLOBAL_TEST_REGISTRY)
@@ -142,6 +150,12 @@ def main():
 
     do_not_attempt = set(args.crashing_tests_to_not_attempt_to_run_and_a_bug_is_filed or []).union(crashing_set)
     available_tests = [test for test in GLOBAL_TEST_REGISTRY if test.unique_name not in do_not_attempt]
+
+    if args.list_tests is True:
+        for test in available_tests:
+            print(test.unique_name)
+        sys.exit(0)
+
     if args.crashing_tests_to_not_attempt_to_run_and_a_bug_is_filed is not None:
         for arg in args.crashing_tests_to_not_attempt_to_run_and_a_bug_is_filed:
             if arg not in all_test_unique_names:
