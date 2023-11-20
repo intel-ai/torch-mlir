@@ -72,6 +72,41 @@ extern "C" void matmul_kernel_f32(int64_t lhs_rank, tensor<float> *lhs,
               lhs->data, k, rhs->data, n, beta, res->data, n);
 }
 
+extern "C" void
+matmul_transpose_b_kernel_f32(int64_t lhs_rank, tensor<float> *lhs,
+                              int64_t rhs_rank, tensor<float> *rhs,
+                              int64_t res_rank, tensor<float> *res) {
+  // trace_matmul_call(lhs_rank, lhs, rhs_rank, rhs, res_rank, res);
+  float alpha = 1.0;
+  float beta = 1.0;
+  auto m = lhs->rank[0];
+  auto k = lhs->rank[1];
+  auto n = rhs->rank[0];
+  // std::cout << "Using MKL implementation. [m(rows op(A)): " << m
+  //           << ", k(cols op(A)): " << k << ", n(cols op(B)  = cols C): " << n
+  //           << "]" << std::endl;
+  cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans, m, n, k, alpha,
+              lhs->data, k, rhs->data, k, beta, res->data, n);
+}
+
+extern "C" void
+matmul_transpose_a_kernel_f32(int64_t lhs_rank, tensor<float> *lhs,
+                              int64_t rhs_rank, tensor<float> *rhs,
+                              int64_t res_rank, tensor<float> *res) {
+  // trace_matmul_call(lhs_rank, lhs, rhs_rank, rhs, res_rank, res);
+  std::cout << "[Matmul transpose a] Not tested MKL implementation." << std::endl;
+  float alpha = 1.0;
+  float beta = 1.0;
+  auto m = lhs->rank[1];
+  auto k = lhs->rank[0];
+  auto n = rhs->rank[1];
+  // std::cout << "Using MKL implementation. [m(rows op(A)): " << m
+  //           << ", k(cols op(A)): " << k << ", n(cols op(B)  = cols C): " << n
+  //           << "]" << std::endl;
+  cblas_sgemm(CblasRowMajor, CblasTrans, CblasNoTrans, m, n, k, alpha,
+              lhs->data, k, rhs->data, k, beta, res->data, n);
+}
+
 extern "C" void matmul_kernel_f64(int64_t lhs_rank, tensor<double> *lhs,
                                   int64_t rhs_rank, tensor<double> *rhs,
                                   int64_t res_rank, tensor<double> *res) {
