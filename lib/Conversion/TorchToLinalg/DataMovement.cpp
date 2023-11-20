@@ -21,6 +21,7 @@
 #include "mlir/Dialect/ControlFlow/IR/ControlFlowOps.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
+#include "mlir/Dialect/Utils/IndexingUtils.h"
 #include "mlir/IR/Matchers.h"
 #include "torch-mlir/Conversion/Utils/Utils.h"
 #include "torch-mlir/Dialect/Torch/IR/TorchDialect.h"
@@ -362,7 +363,7 @@ public:
 
     auto [inputShape, outputShape] =
         getInputAndOutputShape(op.getSelf(), outputSizeTorchInt);
-    
+
     // Currently, we only handle the cases where each dimension is either
     // being expanded or collapsed. We do not handle cases where it's neither
     // collapsing nor expanding like view of [2,3] for 3x2 tensor.
@@ -380,8 +381,8 @@ public:
     bool inputHasOneDynDim = llvm::count(inputShape, kUnknownSize) == 1;
     bool outputHasOneDynDim = llvm::count(outputShape, kUnknownSize) == 1;
     bool singleDynDimsAreEqual =
-    inputHasOneDynDim && outputHasOneDynDim &&
-    productReduce(inputShape) == productReduce(outputShape);
+        inputHasOneDynDim && outputHasOneDynDim &&
+        productReduce(inputShape) == productReduce(outputShape);
     SmallVector<std::pair<int64_t, int64_t>> unchangedDims;
     for (auto [outputDim, outputDimSize] :
          llvm::enumerate(outputSizeTorchInt)) {
@@ -857,39 +858,21 @@ public:
     auto loc = op.getLoc();
 
     SmallVector<Value> outputDims;
-    for (auto i = 0; i < inputRank; i++)
+    for (auto i = 0; i < inputRank; i++) {
       outputDims.push_back(getDimOp(rewriter, loc, adaptor.getSelf(), i));
+    }
     std::swap(outputDims[dim0], outputDims[dim1]);
 
     Value outVector = rewriter.create<tensor::EmptyOp>(
         loc, getAsOpFoldResult(outputDims), elementType);
-    SmallVector<AffineExpr> idExprs;
-    SmallVector<AffineExpr> swapExprs;
-    for (auto i = 0; i < inputRank; i++)
-      idExprs.push_back(getAffineDimExpr(i, rewriter.getContext()));
-    for (auto i = 0; i < inputRank; i++) {
-      if (i == dim0)
-        swapExprs.push_back(idExprs[dim1]);
-      else if (i == dim1)
-        swapExprs.push_back(idExprs[dim0]);
-      else
-        swapExprs.push_back(idExprs[i]);
-    }
 
-    SmallVector<AffineMap> indexingMaps = {
-        AffineMap::get(inputRank, 0, idExprs, op.getContext()),
-        AffineMap::get(inputRank, 0, swapExprs, op.getContext())};
-    SmallVector<utils::IteratorType> iteratorTypes(
-        inputRank, utils::IteratorType::parallel);
-    auto transpose = rewriter
-                         .create<linalg::GenericOp>(
-                             loc, outVector.getType(), inVector, outVector,
-                             indexingMaps, iteratorTypes,
-                             [](OpBuilder &b, Location loc, ValueRange args) {
-                               b.create<linalg::YieldOp>(loc, args[0]);
-                             })
-                         .getResult(0);
-    rewriter.replaceOpWithNewOp<tensor::CastOp>(op, outType, transpose);
+    SmallVector<int64_t> dense({dim1, dim0});
+
+    auto transpose =
+        rewriter.create<linalg::TransposeOp>(loc, inVector, outVector, dense);
+
+    rewriter.replaceOpWithNewOp<tensor::CastOp>(op, outType,
+                                                transpose.getResult()[0]);
     return success();
   }
 };
@@ -1154,7 +1137,8 @@ public:
       return failure();
 
     Type resultType = getTypeConverter()->convertType(op.getType());
-    rewriter.replaceOpWithNewOp<tensor::CastOp>(op, resultType, adaptor.getSelf());
+    rewriter.replaceOpWithNewOp<tensor::CastOp>(op, resultType,
+                                                adaptor.getSelf());
     return success();
   }
 };
@@ -1407,7 +1391,8 @@ public:
 
     SmallVector<AffineMap> indexingMaps{inputMap, outputMap};
 
-    SmallVector<utils::IteratorType> iteratorTypes(resultType.getRank(), utils::IteratorType::parallel);
+    SmallVector<utils::IteratorType> iteratorTypes(
+        resultType.getRank(), utils::IteratorType::parallel);
 
     Value constantZero =
         getConstant(rewriter, loc, 0, mlir::IndexType::get(context));
@@ -1417,7 +1402,6 @@ public:
                 loc, outTensor.getType(), input, outTensor, indexingMaps,
                 iteratorTypes,
                 [&](OpBuilder &b, Location loc, ValueRange args) {
-
                   Value realVal =
                       b.create<complex::ReOp>(loc, elementType, args[0]);
                   Value imagVal =

@@ -99,3 +99,54 @@ class BatchMlpLayerModule(torch.nn.Module):
 @register_test_case(module_factory=lambda: BatchMlpLayerModule())
 def BatchMlpLayerModule_basic(module, tu: TestUtils):
     module.forward(tu.rand(7, 5, 3))
+
+
+from torch_mlir_e2e_test.framework import TraceItem
+class MLP(torch.nn.Module):
+    def __init__(self, input_dim, output_dim):
+        super().__init__()
+        self.flatten = torch.nn.Flatten()
+        self.linear1 = torch.nn.Linear(input_dim, input_dim // 2)
+        # self.relu = torch.nn.ReLU()
+        # self.linear2 = torch.nn.Linear(input_dim // 2, output_dim)
+
+    @export
+    @annotate_args([
+        None,
+        ([-1, -1, -1], torch.float32, True),
+    ])
+    def forward(self, x):
+        x = self.flatten(x)
+        x = self.linear1(x)
+        # x = self.relu(x)
+        # x = self.linear2(x)
+        return x
+
+model = MLP(128*128, 0)
+
+def model_factory():
+    return model
+
+
+# model = model_factory()
+test_input = torch.rand(1, 128, 128)
+# from torch_mlir_e2e_test.framework import DebugTimer
+# with DebugTimer("Vanilla", logger=print):
+#     out_vanilla = model.forward(test_input)
+# golden_trace = [TraceItem(symbol="mlp", inputs=[test_input], output=out_vanilla)]
+w = model.linear1.weight.detach().numpy()
+b = model.linear1.bias.detach().numpy()
+print("in shape: ", test_input.shape)
+print(" w shape: ", w.shape)
+print(" b shape: ", b.shape)
+
+
+@register_test_case(module_factory=model_factory)
+def MLP_basic(module, tu: TestUtils):
+    # test_input = torch.rand(2, 4, 4)
+    print("[in test] basic")
+    # print("[in test] inp: ", test_input)
+    out = module.forward(test_input)
+    # print("[in test] out: ", out)
+    print("[in test] out shape: ", out.size())
+

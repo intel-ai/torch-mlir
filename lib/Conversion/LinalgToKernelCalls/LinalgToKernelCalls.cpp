@@ -34,10 +34,24 @@ namespace {
 LogicalResult
 convertLinalgOpsInFunc(func::FuncOp func,
                        std::map<std::string, SmallVector<Type>> &usedKernels) {
-  OpBuilder b(func.getBody());
+  OpBuilder builder(func.getBody());
   SmallVector<Operation *> replacedOps;
-  func.walk([&](linalg::MatmulOp op) {
-    auto types = op.getOperandTypes();
+  func.walk([&](linalg::LinalgOp op) {
+    mlir::Operation *valid_op;
+    std::string fn_name;
+    if (isa<linalg::MatmulOp>(op)) {
+      valid_op = op;
+      fn_name = "matmul_kernel_";
+    } else if (isa<linalg::MatmulTransposeAOp>(op)) {
+      valid_op = op;
+      fn_name = "matmula_kernel_";
+    } else if (isa<linalg::MatmulTransposeBOp>(op)) {
+      valid_op = op;
+      fn_name = "matmulb_kernel_";
+    } else {
+      return;
+    }
+    auto types = valid_op->getOperandTypes();
     auto lhs_type = types[0];
     auto rhs_type = types[1];
     auto res_type = types[2];
@@ -58,11 +72,11 @@ convertLinalgOpsInFunc(func::FuncOp func,
         !lhs_elem_type.isF64())
       return;
 
-    b.setInsertionPoint(op);
+    builder.setInsertionPoint(valid_op);
 
     auto unranked_type = UnrankedMemRefType::get(
         lhs_elem_type, lhs_type.cast<BaseMemRefType>().getMemorySpace());
-    std::string fn_name = "matmul_kernel_";
+
     llvm::raw_string_ostream rss(fn_name);
     lhs_elem_type.print(rss);
     if (!usedKernels.count(fn_name)) {
@@ -72,15 +86,22 @@ convertLinalgOpsInFunc(func::FuncOp func,
     }
 
     SmallVector<Value> unranked_ops;
-    for (auto op : op.getOperands())
-      unranked_ops.push_back(
-          b.create<memref::CastOp>(op.getLoc(), unranked_type, op));
-    b.create<func::CallOp>(op.getLoc(), fn_name, TypeRange({}), unranked_ops);
-    replacedOps.push_back(op);
+    SmallVector<Type> resultTypes;
+    for (auto res: valid_op->getResults()) {
+      resultTypes.push_back(res.getType());
+    }
+    for (OpOperand &operand : valid_op->getOpOperands()) {
+      unranked_ops.push_back(builder.create<memref::CastOp>(
+          operand.get().getLoc(), unranked_type, operand.get()));
+    }
+    builder.create<func::CallOp>(valid_op->getLoc(), fn_name, resultTypes,
+                                 unranked_ops);
+    replacedOps.push_back(valid_op);
   });
 
-  for (Operation *op : replacedOps)
+  for (Operation *op : replacedOps) {
     op->erase();
+  }
 
   return success();
 }

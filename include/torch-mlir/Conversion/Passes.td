@@ -165,4 +165,15 @@ def ConvertLinalgOpsToKernelCalls
   }];
 }
 
+def FuseLinalgOps
+    : Pass<"fuse-linalg-ops", "ModuleOp"> {
+  let summary = "Fuse linalg operations.";
+  let constructor = [{
+    mlir::torch::createFuseLinalgOpsPass()
+  }];
+  let description = [{
+    This pass replaces linalg.matmul operations with calls to the runtime library.
+  }];
+}
+
 #endif // TORCHMLIR_CONVERSION_PASSES
