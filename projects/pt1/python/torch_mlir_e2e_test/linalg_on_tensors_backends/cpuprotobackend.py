@@ -128,5 +128,5 @@ class CpuProtoLinalgOnTensorsBackend(LinalgOnTensorsBackend):
         """Loads a compiled artifact into the runtime."""
         with DebugTimer('CpuProtoLinalgOnTensorsBackend.load()', logger=print if self._opts.debug_timer else None):
             invoker = RefBackendInvoker(module,
-                                    shared_libs=_collect_shared_libs(self._opts))
+                                    shared_libs=_collect_shared_libs(self._opts), logger=print if self._opts.debug_timer else None)
         return invoker
