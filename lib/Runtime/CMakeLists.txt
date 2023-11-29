@@ -1,3 +1,4 @@
+set(MKL_LINK "static")
 find_package(MKL CONFIG REQUIRED)
 
 add_library(TorchMLIRKernels SHARED Kernels.cpp)
