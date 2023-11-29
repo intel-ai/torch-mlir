@@ -115,7 +115,7 @@ class RefBackendInvoker:
                     ffi_args.append(
                         ctypes.pointer(
                             ctypes.pointer(get_unranked_memref_descriptor(arg))))
-            with DebugTimer('ExecutionEngine.invoke()', logger=self.logger):
+            with DebugTimer('\n**Inference** ExecutionEngine.invoke()', logger=self.logger):
                 self.ee.invoke(function_name, *ffi_args)
             result = self.result
             assert result is not None, "Invocation didn't produce a result"

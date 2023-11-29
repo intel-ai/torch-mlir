@@ -14,6 +14,7 @@ from torch_mlir_e2e_test.annotations import annotate_args, export
 
 # Multi-layer perceptron (MLP) models.
 
+
 class Mlp1LayerModule(torch.nn.Module):
     def __init__(self):
         super().__init__()
@@ -21,17 +22,22 @@ class Mlp1LayerModule(torch.nn.Module):
         torch.manual_seed(0)
         self.fc0 = nn.Linear(3, 5)
         self.tanh0 = nn.Tanh()
+
     @export
-    @annotate_args([
-        None,
-        ([-1, -1], torch.float32, True),
-    ])
+    @annotate_args(
+        [
+            None,
+            ([-1, -1], torch.float32, True),
+        ]
+    )
     def forward(self, x):
         return self.tanh0(self.fc0(x))
+
 
 @register_test_case(module_factory=lambda: Mlp1LayerModule())
 def Mlp1LayerModule_basic(module, tu: TestUtils):
     module.forward(tu.rand(5, 3))
+
 
 class Mlp2LayerModule(torch.nn.Module):
     def __init__(self):
@@ -43,19 +49,24 @@ class Mlp2LayerModule(torch.nn.Module):
         self.tanh0 = nn.Tanh()
         self.fc1 = nn.Linear(N_HIDDEN, 2)
         self.tanh1 = nn.Tanh()
+
     @export
-    @annotate_args([
-        None,
-        ([-1, -1], torch.float32, True),
-    ])
+    @annotate_args(
+        [
+            None,
+            ([-1, -1], torch.float32, True),
+        ]
+    )
     def forward(self, x):
         x = self.tanh0(self.fc0(x))
         x = self.tanh1(self.fc1(x))
         return x
 
+
 @register_test_case(module_factory=lambda: Mlp2LayerModule())
 def Mlp2LayerModule_basic(module, tu: TestUtils):
     module.forward(tu.rand(5, 3))
+
 
 class Mlp2LayerModuleNoBias(torch.nn.Module):
     def __init__(self):
@@ -67,19 +78,24 @@ class Mlp2LayerModuleNoBias(torch.nn.Module):
         self.tanh0 = nn.Tanh()
         self.fc1 = nn.Linear(N_HIDDEN, 2, bias=False)
         self.tanh1 = nn.Tanh()
+
     @export
-    @annotate_args([
-        None,
-        ([-1, -1], torch.float32, True),
-    ])
+    @annotate_args(
+        [
+            None,
+            ([-1, -1], torch.float32, True),
+        ]
+    )
     def forward(self, x):
         x = self.tanh0(self.fc0(x))
         x = self.tanh1(self.fc1(x))
         return x
 
+
 @register_test_case(module_factory=lambda: Mlp2LayerModuleNoBias())
 def Mlp2LayerModuleNoBias_basic(module, tu: TestUtils):
     module.forward(tu.rand(5, 3))
+
 
 class BatchMlpLayerModule(torch.nn.Module):
     def __init__(self):
@@ -88,13 +104,17 @@ class BatchMlpLayerModule(torch.nn.Module):
         torch.manual_seed(0)
         self.fc0 = nn.Linear(3, 5)
         self.tanh0 = nn.Tanh()
+
     @export
-    @annotate_args([
-        None,
-        ([-1, -1, -1], torch.float32, True),
-    ])
+    @annotate_args(
+        [
+            None,
+            ([-1, -1, -1], torch.float32, True),
+        ]
+    )
     def forward(self, x):
         return self.tanh0(self.fc0(x))
+
 
 @register_test_case(module_factory=lambda: BatchMlpLayerModule())
 def BatchMlpLayerModule_basic(module, tu: TestUtils):
@@ -105,7 +125,7 @@ class MLP(torch.nn.Module):
     def __init__(self, input_dim, output_dim):
         super().__init__()
         self.flatten = torch.nn.Flatten()
-        self.linear1 = torch.nn.Linear(input_dim, input_dim // 2)
+        self.linear1 = torch.nn.Linear(input_dim, input_dim // 2, bias=False)
         # self.relu = torch.nn.ReLU()
         # self.linear2 = torch.nn.Linear(input_dim // 2, output_dim)
 
@@ -123,20 +143,71 @@ class MLP(torch.nn.Module):
 
 model = MLP(128 * 128, 0)
 
+with torch.no_grad():
+    model.linear1.weight = nn.Parameter(torch.ones(model.linear1.weight.shape))
+    model.linear1.weight[:, 1] = 2.
+    model.linear1.weight[:, 4] = 5.
+    model.linear1.weight[:, 6] = 5.
+    # model.linear1.bias == nn.Parameter(torch.ones_like(model.linear1.bias))
+
 def model_factory():
     return model
 
+in_shape = (128, 128)
 
-test_input = torch.rand(1, 128, 128)
+from torch.utils.data import DataLoader, Dataset
+from torchvision import datasets, transforms
+import numpy as np
+
+
+class RandomClsDataset(Dataset):
+    def __init__(self, n, in_shape, n_classes):
+        super().__init__()
+
+        self.values = np.random.randn(n, *in_shape).astype(np.float32)
+        self.labels = np.random.randint(n_classes, size=(n,))
+
+    def __len__(self):
+        return len(self.values)
+
+    def __getitem__(self, index):
+        return self.values[index], self.labels[index]
+
+
+ds_size = 1000
+ds = RandomClsDataset(ds_size, in_shape, 100)
+train_loader = DataLoader(
+    ds, batch_size=100, shuffle=True, num_workers=1, pin_memory=False
+)
+
+from torch_mlir_e2e_test.framework import DebugTimer
+print("Dataset size: ", len(train_loader.dataset))
+sample_input = next(iter(train_loader))[0]
+sample_input2 = next(iter(train_loader))[0]
+sample_input3 = next(iter(train_loader))[0]
+print("[in] sample")
+with DebugTimer("\nVanilla sample", logger=print):
+    model.forward(sample_input)
+    model.forward(sample_input2)
+    model.forward(sample_input3)
+for _ in range(ds_size//100):
+    with DebugTimer("\n**Inference** Vanilla", logger=print):
+        out_vanilla = model.forward(sample_input2)
+
+
 w = model.linear1.weight.detach().numpy()
-b = model.linear1.bias.detach().numpy()
-print("in shape: ", test_input.shape)
+# b = model.linear1.bias.detach().numpy()
+print("in shape: ", sample_input.shape)
 print(" w shape: ", w.shape)
-print(" b shape: ", b.shape)
+# print(" b shape: ", b.shape)
 
 
 @register_test_case(module_factory=model_factory)
 def MLP_basic(module, tu: TestUtils):
-    out = module.forward(test_input)
+    print("[in] sample")
+    module.forward(sample_input)
+    module.forward(sample_input2)
+    module.forward(sample_input3)
+    for _ in range(ds_size//100):
+        out = module.forward(sample_input2)
     print("[test body] out shape: ", out.size())
-
