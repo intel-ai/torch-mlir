@@ -126,8 +126,8 @@ class MLP(torch.nn.Module):
         super().__init__()
         self.flatten = torch.nn.Flatten()
         self.linear1 = torch.nn.Linear(input_dim, input_dim // 2, bias=False)
-        # self.relu = torch.nn.ReLU()
-        # self.linear2 = torch.nn.Linear(input_dim // 2, output_dim)
+        self.relu = torch.nn.ReLU()
+        self.linear2 = torch.nn.Linear(input_dim // 2, output_dim)
 
     @export
     @annotate_args([
@@ -137,11 +137,11 @@ class MLP(torch.nn.Module):
     def forward(self, x):
         x = self.flatten(x)
         x = self.linear1(x)
-        # x = self.relu(x)
-        # x = self.linear2(x)
+        x = self.relu(x)
+        x = self.linear2(x)
         return x
 
-model = MLP(128 * 128, 0)
+model = MLP(128 * 128, 1024)
 
 with torch.no_grad():
     model.linear1.weight = nn.Parameter(torch.ones(model.linear1.weight.shape))
