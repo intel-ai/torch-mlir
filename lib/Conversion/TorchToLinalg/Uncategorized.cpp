@@ -1290,6 +1290,31 @@ public:
     return success();
   }
 };
+
+class ConvertAtenCloneOp : public OpConversionPattern<AtenCloneOp> {
+public:
+  using OpConversionPattern::OpConversionPattern;
+  LogicalResult
+  matchAndRewrite(AtenCloneOp op, OpAdaptor adaptor,
+                  ConversionPatternRewriter &rewriter) const override {
+
+    // Location loc = op->getLoc();
+    Value from = adaptor.getSelf();
+    auto resultType = getTypeConverter()
+                          ->convertType(op->getResult(0).getType())
+                          .cast<RankedTensorType>();
+    // Type resultElementType = resultType.cast<TensorType>().getElementType();
+
+    // Value to = rewriter.create<tensor::EmptyOp>(loc, resultType.getShape(),
+    //                                             resultElementType);
+
+    // Value copy = rewriter.create<linalg::CopyOp>(loc, to.getType(), from, to)
+    //                  .getResult(0);
+    rewriter.replaceOpWithNewOp<tensor::CastOp>(op, resultType, from);
+    return success();
+  }
+};
+
 } // namespace
 
 // Given `input`, `target`, `nll_loss_forward` is given by:
@@ -1779,6 +1804,8 @@ void mlir::torch::torch_to_linalg::populateUncategorizedPatternsAndLegality(
     TypeConverter &typeConverter, RewritePatternSet &patterns,
     ConversionTarget &target) {
   MLIRContext *context = patterns.getContext();
+  target.addIllegalOp<AtenCloneOp>();
+  patterns.add<ConvertAtenCloneOp>(typeConverter, context);
   target.addIllegalOp<
       AtenTanhOp, AtenReluOp, AtenGeluOp, AtenGeluBackwardOp, AtenAddTensorOp,
       AtenMulTensorOp, AtenDivTensorOp, AtenDivTensorModeOp, AtenSubTensorOp,
