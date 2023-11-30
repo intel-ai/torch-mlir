@@ -176,4 +176,15 @@ def FuseLinalgOps
   }];
 }
 
+def LinalgGenericToVectorOps
+    : Pass<"linalg-to-vector", "ModuleOp"> {
+  let summary = "Fuse linalg operations.";
+  let constructor = [{
+    mlir::torch::createLinalgGenericToVectorOpsPass()
+  }];
+  let description = [{
+    This pass replaces linalg.matmul operations with calls to the runtime library.
+  }];
+}
+
 #endif // TORCHMLIR_CONVERSION_PASSES

@@ -4,6 +4,7 @@ add_subdirectory(TorchToSCF)
 add_subdirectory(TorchToArith)
 add_subdirectory(TorchToTosa)
 add_subdirectory(FuseLinalg)
+add_subdirectory(LinalgGenericToVector)
 if(TORCH_MLIR_ENABLE_STABLEHLO)
   add_subdirectory(TorchToStablehlo)
 endif()
@@ -15,6 +16,7 @@ add_subdirectory(Utils)
 set(linked_libs TorchMLIRLinalgToKernelCalls
                 TorchMLIRTorchToLinalg
                 FuseLinalg
+                LinalgGenericToVector
                 TorchMLIRTorchToSCF
                 TorchMLIRTorchToArith
                 TorchMLIRTorchToTosa

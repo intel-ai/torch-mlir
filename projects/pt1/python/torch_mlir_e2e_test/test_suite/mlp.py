@@ -127,7 +127,7 @@ class MLP(torch.nn.Module):
         self.flatten = torch.nn.Flatten()
         self.linear1 = torch.nn.Linear(input_dim, input_dim // 2, bias=False)
         self.relu = torch.nn.ReLU()
-        self.linear2 = torch.nn.Linear(input_dim // 2, output_dim)
+        # self.linear2 = torch.nn.Linear(input_dim // 2, output_dim)
 
     @export
     @annotate_args([
@@ -138,7 +138,7 @@ class MLP(torch.nn.Module):
         x = self.flatten(x)
         x = self.linear1(x)
         x = self.relu(x)
-        x = self.linear2(x)
+        # x = self.linear2(x)
         return x
 
 model = MLP(128 * 128, 1024)
@@ -174,7 +174,7 @@ class RandomClsDataset(Dataset):
         return self.values[index], self.labels[index]
 
 
-ds_size = 1000
+ds_size = 100
 ds = RandomClsDataset(ds_size, in_shape, 100)
 train_loader = DataLoader(
     ds, batch_size=100, shuffle=True, num_workers=1, pin_memory=False
@@ -188,8 +188,8 @@ sample_input3 = next(iter(train_loader))[0]
 print("[in] sample")
 with DebugTimer("\nVanilla sample", logger=print):
     model.forward(sample_input)
-    model.forward(sample_input2)
-    model.forward(sample_input3)
+    # model.forward(sample_input2)
+    # model.forward(sample_input3)
 for _ in range(ds_size//100):
     with DebugTimer("\n**Inference** Vanilla", logger=print):
         out_vanilla = model.forward(sample_input2)
@@ -206,8 +206,6 @@ print(" w shape: ", w.shape)
 def MLP_basic(module, tu: TestUtils):
     print("[in] sample")
     module.forward(sample_input)
-    module.forward(sample_input2)
-    module.forward(sample_input3)
     for _ in range(ds_size//100):
         out = module.forward(sample_input2)
     print("[test body] out shape: ", out.size())

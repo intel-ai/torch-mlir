@@ -107,7 +107,6 @@ public:
     mlir::MLIRContext *context = &getContext();
     mlir::RewritePatternSet patterns(context);
 
-    // pattern.add calls go here
     patterns.add<MatmulTranspose>(context);
 
     mlir::GreedyRewriteConfig config;
