@@ -15,6 +15,33 @@ set(LinkedLibs
   MLIRTosaDialect
   MLIRSupport
 
+  MLIRGPUDialect
+  MLIRGPUTransforms
+  MLIRSPIRVDialect
+  MLIRAsyncToLLVM
+
+  IMEXPTensorDialect
+  IMEXDistDialect
+  IMEXGPUXDialect
+  IMEXXeTileDialect
+  IMEXXeGPUDialect
+
+  IMEXPTensorTransforms
+  IMEXXeTileTransforms
+  IMEXXeGPUTransforms
+
+  IMEXPTensorToLinalg
+  IMEXDistToStandard
+  IMEXGPUToSPIRV
+  IMEXGPUToGPUX
+  IMEXGPUXToLLVM
+  XeGPUToSPIRV
+  IMEXXeTileToXeGPU
+  
+  MLIROptLib
+  IMEXTransforms
+  IMEXUtil
+
   TorchMLIRTorchPasses
   TorchMLIRTorchConversionDialect
 

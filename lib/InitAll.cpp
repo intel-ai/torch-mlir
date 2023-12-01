@@ -28,11 +28,22 @@
 #include "torch-mlir/Dialect/TorchConversion/Transforms/Passes.h"
 #include "torch-mlir/RefBackend/Passes.h"
 
+#include "mlir/Dialect/Affine/IR/AffineOps.h"
+#include "mlir/Dialect/GPU/IR/GPUDialect.h"
+#include "mlir/Dialect/SPIRV/IR/SPIRVDialect.h"
+
+#include "imex/Conversion/Passes.h"
+#include "imex/InitIMEXDialects.h"
+#include "imex/InitIMEXPasses.h"
+#include "imex/Transforms/Passes.h"
+#include "mlir/Dialect/Func/Extensions/AllExtensions.h"
+
 void mlir::torch::registerAllDialects(mlir::DialectRegistry &registry) {
   registry.insert<mlir::func::FuncDialect>();
   registry.insert<mlir::torch::Torch::TorchDialect>();
   registry.insert<mlir::torch::TorchConversion::TorchConversionDialect>();
   registry.insert<mlir::torch::TMTensor::TMTensorDialect>();
+  ::imex::registerAllDialects(registry);
   mlir::func::registerInlinerExtension(registry);
 }
 
@@ -42,6 +53,8 @@ void mlir::torch::registerOptionalInputDialects(
   registry.insert<complex::ComplexDialect, linalg::LinalgDialect,
                   memref::MemRefDialect, ml_program::MLProgramDialect,
                   scf::SCFDialect, tensor::TensorDialect, tosa::TosaDialect>();
+  registry
+      .insert<gpu::GPUDialect, spirv::SPIRVDialect, affine::AffineDialect>();
 }
 
 void mlir::torch::registerAllPasses() {
@@ -50,6 +63,8 @@ void mlir::torch::registerAllPasses() {
 
   mlir::torch::registerConversionPasses();
   mlir::torch::TMTensor::registerPasses();
+
+  ::imex::registerAllPasses();
 
 #ifdef TORCH_MLIR_ENABLE_REFBACKEND
   mlir::torch::RefBackend::registerRefBackendPasses();
