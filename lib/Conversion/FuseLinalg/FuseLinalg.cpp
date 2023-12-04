@@ -35,8 +35,9 @@ public:
 
     for (size_t num_input = 0; num_input < inputs.size(); num_input++) {
       mlir::Value input = inputs[num_input];
-      transposeOp =
-          llvm::dyn_cast<mlir::linalg::TransposeOp>(input.getDefiningOp());
+      // If one of inputs is input of whole func it will be nullptr.
+      transposeOp = llvm::dyn_cast_if_present<mlir::linalg::TransposeOp>(
+          input.getDefiningOp());
       if (!transposeOp) {
         continue;
       }
@@ -96,7 +97,7 @@ public:
 
     if (transposeOp.getResult().use_empty()) {
       rewriter.eraseOp(transposeOp);
-    } 
+    }
     return mlir::success();
   }
 };
