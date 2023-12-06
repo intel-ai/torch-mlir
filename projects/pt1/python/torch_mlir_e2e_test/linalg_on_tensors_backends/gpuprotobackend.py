@@ -9,6 +9,7 @@ from torch_mlir_e2e_test.framework import TestOptions, DebugTimer
 
 from .abc import LinalgOnTensorsBackend
 from .refbackend import RefBackendInvoker
+from .utils import _collect_shared_libs
 
 __all__ = [
     "GpuProtoLinalgOnTensorsBackend",
@@ -138,5 +139,5 @@ class GpuProtoLinalgOnTensorsBackend(LinalgOnTensorsBackend):
         """Loads a compiled artifact into the runtime."""
         with DebugTimer('GpuProtoLinalgOnTensorsBackend.load()', logger=print if self._opts.debug_timer else None):
             invoker = RefBackendInvoker(module,
-                                    shared_libs=["/localdisk/pakurapo/torch-mlir/build/lib/liblevel-zero-runtime.so"])
+                                    shared_libs=_collect_shared_libs(self._opts))
         return invoker
