@@ -1,0 +1,27 @@
+diff --git a/mlir/lib/Bindings/Python/IRModule.h b/mlir/lib/Bindings/Python/IRModule.h
+index c5412e735ddd..672b5b65885c 100644
+--- a/mlir/lib/Bindings/Python/IRModule.h
++++ b/mlir/lib/Bindings/Python/IRModule.h
+@@ -9,6 +9,7 @@
+ #ifndef MLIR_BINDINGS_PYTHON_IRMODULES_H
+ #define MLIR_BINDINGS_PYTHON_IRMODULES_H
+ 
++#include <iostream>
+ #include <optional>
+ #include <utility>
+ #include <vector>
+@@ -407,6 +408,14 @@ struct PyMlirContext::ErrorCapture {
+                       /*deleteUserData=*/nullptr)) {}
+   ~ErrorCapture() {
+     mlirContextDetachDiagnosticHandler(ctx->get(), handlerID);
++    if (!errors.empty()) {
++      std::cerr << "Found " << errors.size() << " unhandled errors."
++                << std::endl;
++      for (auto &e : errors) {
++        std::cerr << e.message << std::endl;
++      }
++      std::cerr << "End of unhandled error list" << std::endl;
++    }
+     assert(errors.empty() && "unhandled captured errors");
+   }
+

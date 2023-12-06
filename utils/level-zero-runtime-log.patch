@@ -1,0 +1,58 @@
+diff --git a/lib/ExecutionEngine/LEVELZERORUNTIME/LevelZeroRuntimeWrappers.cpp b/lib/ExecutionEngine/LEVELZERORUNTIME/LevelZeroRuntimeWrappers.cpp
+index ccf2258..edf807e 100644
+--- a/lib/ExecutionEngine/LEVELZERORUNTIME/LevelZeroRuntimeWrappers.cpp
++++ b/lib/ExecutionEngine/LEVELZERORUNTIME/LevelZeroRuntimeWrappers.cpp
+@@ -27,6 +27,8 @@
+ #include <tuple>
+ #include <vector>
+ 
++#include <iostream>
++
+ #include <level_zero/ze_api.h>
+ 
+ #ifdef _WIN32
+@@ -382,6 +384,7 @@ static ze_module_handle_t loadModule(GPUL0QUEUE *queue, const void *data,
+   auto it = moduleCache.find((const void *)data);
+   // Check the map if the module is present/cached.
+   if (it != moduleCache.end()) {
++    assert(false && "Module is cached");
+     return it->second.module;
+   }
+   ze_module_desc_t desc = {};
+@@ -394,13 +397,36 @@ static ze_module_handle_t loadModule(GPUL0QUEUE *queue, const void *data,
+         "-DPASTokenReduction -Xfinalizer -SWSBDepReduction -Xfinalizer "
+         "'-printregusage -enableBCR' ";
+   }
++  if (getenv("IMEX_ENABLE_VC_PATH")) {
++    build_flags = "-vc-codegen";
++  }
++
++  if (getenv("IMEX_MIMIC_OCLOC")) {
++    build_flags = "-ze-intel-has-buffer-offset-arg "
++                  "-cl-intel-greater-than-4GB-buffer-required "
++                  "-cl-store-cache-default=2 -cl-load-cache-default=4";
++  }
+ 
++  std::cerr << "L0 module build flags: "
++            << (build_flags ? build_flags : "empty") << std::endl;
++
++  ze_module_build_log_handle_t buildlog = nullptr;
++
++  desc.stype = ZE_STRUCTURE_TYPE_MODULE_DESC;
+   desc.format = ZE_MODULE_FORMAT_IL_SPIRV;
+   desc.pInputModule = static_cast<const uint8_t *>(data);
+   desc.inputSize = dataSize;
+   desc.pBuildFlags = build_flags;
+   CHECK_ZE_RESULT(zeModuleCreate(gpuL0Queue->zeContext_, gpuL0Queue->zeDevice_,
+                                  &desc, &zeModule, nullptr));
++  size_t logSize = 0;
++  CHECK_ZE_RESULT(zeModuleBuildLogGetString(buildlog, &logSize, nullptr));
++  std::string strLog(logSize, ' ');
++  CHECK_ZE_RESULT(zeModuleBuildLogGetString(buildlog, &logSize, strLog.data()));
++  if (logSize > 0) {
++    std::cerr << "L0 Module build log:\n" << strLog << std::endl;
++  }
++
+   std::lock_guard<std::mutex> entryLock(mutexLock);
+   moduleCache[(const void *)data].module = zeModule;
+   return zeModule;

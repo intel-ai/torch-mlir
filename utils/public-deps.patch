@@ -1,0 +1,47 @@
+commit 5ad00f8c30c14adaa7c2b908c20503c4f9825da6
+Author: Petr Kurapov <petr.a.kurapov@intel.com>
+Date:   Fri Dec 1 03:40:26 2023 -0700
+
+    Fix public dependencies propagation
+
+diff --git a/lib/Conversion/GPUToSPIRV/CMakeLists.txt b/lib/Conversion/GPUToSPIRV/CMakeLists.txt
+index 4fa56b2..35f2be9 100644
+--- a/lib/Conversion/GPUToSPIRV/CMakeLists.txt
++++ b/lib/Conversion/GPUToSPIRV/CMakeLists.txt
+@@ -18,4 +18,9 @@ add_mlir_conversion_library(IMEXGPUToSPIRV
+   MLIRSPIRVConversion
+   MLIRSupport
+   MLIRTransforms
++
++  MLIRGPUToSPIRV
++  MLIRControlFlowToSPIRV
++  MLIRMathToSPIRV
++
+   )
+diff --git a/lib/Conversion/GPUXToLLVM/CMakeLists.txt b/lib/Conversion/GPUXToLLVM/CMakeLists.txt
+index 56515be..c9ea54f 100644
+--- a/lib/Conversion/GPUXToLLVM/CMakeLists.txt
++++ b/lib/Conversion/GPUXToLLVM/CMakeLists.txt
+@@ -14,4 +14,8 @@ add_mlir_conversion_library(IMEXGPUXToLLVM
+   MLIRSCFToSPIRV
+   MLIRSupport
+   MLIRTransforms
++
++  MLIRMemRefToLLVM
++  MLIRAsyncToLLVM
++  MLIRGPUToGPURuntimeTransforms
+   )
+diff --git a/lib/Transforms/CMakeLists.txt b/lib/Transforms/CMakeLists.txt
+index 6b3bf59..34a62bc 100644
+--- a/lib/Transforms/CMakeLists.txt
++++ b/lib/Transforms/CMakeLists.txt
+@@ -19,6 +19,9 @@ add_mlir_library(IMEXTransforms
+   MLIRSupport
+   MLIRTransformUtils
+ 
++  MLIRGPUTransforms
++  MLIRSPIRVSerialization
++
+   DEPENDS
+   IMEXTransformsPassIncGen
+ )
