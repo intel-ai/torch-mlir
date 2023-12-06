@@ -106,11 +106,15 @@ Available options:
                         default=False,
                         action="store_true",
                         help="Enable debug timings collection.")
+    parser.add_argument("--use-gpu-runtime",
+                        default=False,
+                        action="store_true",
+                        help="Enable level zero wrapper library symbols loading into JIT.")
     return parser
 
 def main():
     args = _get_argparse().parse_args()
-    opts = TestOptions(dumps=args.dump, use_kernels=args.use_kernels, debug_timer=args.enable_timer)
+    opts = TestOptions(dumps=args.dump, use_kernels=args.use_kernels, debug_timer=args.enable_timer, use_gpu_runtime=args.use_gpu_runtime)
 
     all_test_unique_names = set(
         test.unique_name for test in GLOBAL_TEST_REGISTRY)

@@ -12,6 +12,19 @@ from torch_mlir_e2e_test.annotations import annotate_args, export
 
 # ==============================================================================
 
+class VectorAdd(torch.nn.Module):
+    @export
+    @annotate_args([None, ([2,2], torch.float32)])
+    def forward(self, x):
+        return torch.add(x, x)
+
+@register_test_case(module_factory=lambda: VectorAdd())
+def VectorAdd_basic(module, tu: TestUtils):
+    x = tu.rand(2)
+    print('passing ', x)
+    result = module.forward(x)
+    print(result)
+
 # Multi-layer perceptron (MLP) models.
 
 in_features = 64

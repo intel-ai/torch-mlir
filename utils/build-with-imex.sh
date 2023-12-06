@@ -28,8 +28,12 @@ cmake -GNinja -Bbuild \
     -DLLVM_EXTERNAL_TORCH_MLIR_SOURCE_DIR="$PWD" \
     -DLLVM_EXTERNAL_IMEX_SOURCE_DIR="$PWD/externals/mlir-extensions" \
     -DMLIR_ENABLE_BINDINGS_PYTHON=ON \
+    -DIMEX_ENABLE_L0_RUNTIME=ON \
     -DLLVM_TARGETS_TO_BUILD=host \
     externals/llvm-project/llvm
 
 cmake --build build
+
+# a dirty hack for library search
+cp build/lib/liblevel-zero-runtime.so* build/tools/torch-mlir/python_packages/torch_mlir/torch_mlir/_mlir_libs/
 
