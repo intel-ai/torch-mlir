@@ -15,6 +15,7 @@ popd
 
 pushd externals/llvm-project
 git checkout `cat ${project_dir}/externals/mlir-extensions/build_tools/llvm_version.txt`
+git apply ${project_dir}/externals/mlir-extensions/build_tools/patches/*
 git apply ${project_dir}/utils/llvm-error-msg.patch
 popd
 
