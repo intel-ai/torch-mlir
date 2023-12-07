@@ -14,6 +14,16 @@ set(LinkedLibs
   MLIRTensorDialect
   MLIRTosaDialect
   MLIRSupport
+  MLIRLinalgTransformOps
+  MLIRTensorTransformOps
+  MLIROpenACCToLLVMIRTranslation
+  MLIROpenMPToLLVMIRTranslation
+  MLIRX86VectorToLLVMIRTranslation
+  MLIRAMXToLLVMIRTranslation
+  MLIRArmNeonToLLVMIRTranslation
+  MLIRArmSMEToLLVMIRTranslation
+  MLIRArmSVEToLLVMIRTranslation
+  MLIRSPIRVToLLVMIRTranslation
 
   MLIRGPUDialect
   MLIRGPUTransforms
@@ -52,6 +62,25 @@ set(LinkedLibs
   TorchMLIRTMTensorDialect
 
   TorchMLIRConversionPasses
+
+  TPPIR
+  TPPPipeline
+  TPPTransforms
+  TPPTppDialect
+  TPPLinalgXTransformOps
+  TPPXsmmDialect
+  TPPCheckToLoops
+  TPPLinalgToFunc
+  TPPLinalgToTpp
+  TPPLinalgToXSMM
+  TPPMemRefToXSMM
+  TPPPerfToFunc
+  TPPPerfToLoop
+  TPPTppToLoops
+  TPPTppToXSMM
+  TPPXsmmToFunc
+  TPPTestLib
+  xsmm
 )
 
 if(TORCH_MLIR_ENABLE_REFBACKEND)
