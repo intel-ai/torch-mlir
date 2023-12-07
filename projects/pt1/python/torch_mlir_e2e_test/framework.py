@@ -161,10 +161,11 @@ class TestOptions:
 
     dump_choices = ["all", "fx-graph", "torch-mlir", "linalg-mlir", "llvm-mlir", "torch-mlir-lowering", "linalg-mlir-lowering", "obj"]
 
-    def __init__(self, *, dumps: List[str] = [], use_kernels=False, debug_timer=False):
+    def __init__(self, *, dumps: List[str] = [], use_kernels=False, debug_timer=False, use_omp=True):
         self.dumps = {opt for opt in dumps}
         self.use_kernels = use_kernels
         self.debug_timer = debug_timer
+        self.use_omp = use_omp
 
     def is_dump_enabled(self, dump: str):
         return dump in self.dumps or "all" in self.dumps
