@@ -13,6 +13,7 @@ endif()
 target_link_libraries(torch-mlir-opt PRIVATE
   MLIROptLib
   MLIRTransforms
+  IMEXTransforms
   TorchMLIRInitAll
   TorchMLIRTorchDialect
   TorchMLIRTorchPasses

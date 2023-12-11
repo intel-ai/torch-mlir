@@ -112,8 +112,12 @@ else()
   # TODO: Fix this upstream so that global include directories are not needed.
   set(MLIR_MAIN_SRC_DIR ${LLVM_MAIN_SRC_DIR}/../mlir)
   set(MLIR_INCLUDE_DIR ${LLVM_MAIN_SRC_DIR}/../mlir/include)
+  set(IMEX_MAIN_SRC_DIR ${LLVM_MAIN_SRC_DIR}/../../mlir-extensions)
+  set(IMEX_INCLUDE_DIR ${LLVM_MAIN_SRC_DIR}/../../mlir-extensions/include)
+  set(IMEX_GENERATED_INCLUDE_DIR ${LLVM_BINARY_DIR}/tools/Imex/include)
   set(MLIR_GENERATED_INCLUDE_DIR ${LLVM_BINARY_DIR}/tools/mlir/include)
-  set(MLIR_INCLUDE_DIRS "${MLIR_INCLUDE_DIR};${MLIR_GENERATED_INCLUDE_DIR}")
+  set(IMEX_INCLUDE_DIRS "${IMEX_INCLUDE_DIR};${IMEX_GENERATED_INCLUDE_DIR}")
+  set(MLIR_INCLUDE_DIRS "${MLIR_INCLUDE_DIR};${MLIR_GENERATED_INCLUDE_DIR};${IMEX_INCLUDE_DIRS}")
 endif()
 
 if (TORCH_MLIR_ENABLE_STABLEHLO)
@@ -128,12 +132,15 @@ include_directories(${LLVM_INCLUDE_DIRS})
 include_directories(${MLIR_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/../Imex/include)
 
 function(torch_mlir_target_includes target)
   set(_dirs
     $<BUILD_INTERFACE:${MLIR_INCLUDE_DIRS}>
     $<BUILD_INTERFACE:${TORCH_MLIR_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${TORCH_MLIR_BINARY_DIR}/include>
+    $<BUILD_INTERFACE:${TORCH_MLIR_BINARY_DIR}/../Imex/include>
   )
   # In LLVM parlance, the actual target may just be an interface and may not
   # be responsible for actually compiling anything. The corresponding obj.
@@ -149,6 +156,13 @@ endfunction()
 # Configure CMake.
 list(APPEND CMAKE_MODULE_PATH ${MLIR_MAIN_SRC_DIR}/cmake/modules)
 list(APPEND CMAKE_MODULE_PATH ${LLVM_MAIN_SRC_DIR}/cmake)
+list(APPEND CMAKE_MODULE_PATH ${IMEX_MAIN_SRC_DIR}/cmake/modules)
+
+get_property(IMEX_LIBS GLOBAL PROPERTY IMEX_ALL_LIBS)
+message(STATUS "${TORCH_MLIR_BINARY_DIR}/tools/Imex/include")
+message(STATUS "${CMAKE_CURRENT_BINARY_DIR}/../Imex/include")
+message(STATUS "IMEX_LIBS: ${IMEX_LIBS}")
+# message(FATAL_ERROR "IMEX_INCLUDE_DIRS: ${IMEX_INCLUDE_DIRS}")
 
 include(TableGen)
 include(AddLLVM)

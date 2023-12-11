@@ -6,20 +6,35 @@
 import torch
 import torch.nn as nn
 
-from torch_mlir_e2e_test.framework import TestUtils
+from torch_mlir_e2e_test.framework import TestUtils, DebugTimer
 from torch_mlir_e2e_test.registry import register_test_case
 from torch_mlir_e2e_test.annotations import annotate_args, export
 
 # ==============================================================================
 
+class VectorAdd(torch.nn.Module):
+    @export
+    @annotate_args([None, ([2,2], torch.float32)])
+    def forward(self, x):
+        return torch.add(x, x)
+
+@register_test_case(module_factory=lambda: VectorAdd())
+def VectorAdd_basic(module, tu: TestUtils):
+    x = tu.rand(2)
+    print('passing ', x)
+    result = module.forward(x)
+    print(result)
+
 # Multi-layer perceptron (MLP) models.
 
+in_features = 3
+out_features = 5
 class Mlp1LayerModule(torch.nn.Module):
     def __init__(self):
         super().__init__()
         # Reset seed to make model deterministic.
         torch.manual_seed(0)
-        self.fc0 = nn.Linear(3, 5)
+        self.fc0 = nn.Linear(in_features, out_features)
         self.tanh0 = nn.Tanh()
     @export
     @annotate_args([
@@ -31,7 +46,8 @@ class Mlp1LayerModule(torch.nn.Module):
 
 @register_test_case(module_factory=lambda: Mlp1LayerModule())
 def Mlp1LayerModule_basic(module, tu: TestUtils):
-    module.forward(tu.rand(5, 3))
+    with DebugTimer("Mlp1LayerModule.forward()"):
+        module.forward(tu.rand(out_features, in_features))
 
 class Mlp2LayerModule(torch.nn.Module):
     def __init__(self):

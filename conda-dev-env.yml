@@ -13,9 +13,8 @@ dependencies:
   - gcc_linux-64   12.*
   - ccache
   - sysroot_linux-64 >=2.14
-  - llvmdev     16.*
   - cmake
-  - make
-  - llvm
+  - ninja
   - python      ==3.11
-  - mkl
+  - level-zero-devel
+  - git
