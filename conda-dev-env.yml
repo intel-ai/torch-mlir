@@ -17,4 +17,4 @@ dependencies:
   - ninja
   - python      ==3.11
   - level-zero-devel
-
+  - git

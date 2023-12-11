@@ -7,6 +7,8 @@ project_dir=$PWD
 echo "Using project dir: ${project_dir}"
 
 # assuming git submodule update --init was done and all the code is present
+git submodule foreach --recursive git checkout .
+
 pushd externals/mlir-extensions
 git checkout tags/v0.3
 git apply ${project_dir}/utils/public-deps.patch
