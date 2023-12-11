@@ -27,8 +27,8 @@ def VectorAdd_basic(module, tu: TestUtils):
 
 # Multi-layer perceptron (MLP) models.
 
-in_features = 64
-out_features = 64
+in_features = 3
+out_features = 5
 class Mlp1LayerModule(torch.nn.Module):
     def __init__(self):
         super().__init__()
@@ -45,7 +45,6 @@ class Mlp1LayerModule(torch.nn.Module):
         return self.tanh0(self.fc0(x))
 
 @register_test_case(module_factory=lambda: Mlp1LayerModule())
-# @DebugTimer("Mlp1LayerModule")
 def Mlp1LayerModule_basic(module, tu: TestUtils):
     with DebugTimer("Mlp1LayerModule.forward()"):
         module.forward(tu.rand(out_features, in_features))
