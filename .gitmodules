@@ -6,4 +6,4 @@
 	url = https://github.com/openxla/stablehlo.git
 [submodule "externals/mlir-extensions"]
 	path = externals/mlir-extensions
-	url = git@github.com:intel/mlir-extensions.git
+	url = https://github.com/intel/mlir-extensions.git
