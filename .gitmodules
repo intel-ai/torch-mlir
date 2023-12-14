@@ -7,3 +7,6 @@
 [submodule "externals/mlir-extensions"]
 	path = externals/mlir-extensions
 	url = https://github.com/intel/mlir-extensions.git
+[submodule "externals/tpp-mlir"]
+	path = externals/tpp-mlir
+	url = https://github.com/intel-ai/tpp-mlir

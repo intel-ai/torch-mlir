@@ -10,7 +10,7 @@ echo "Using project dir: ${project_dir}"
 git submodule foreach --recursive git checkout .
 
 pushd externals/mlir-extensions
-git checkout tags/v0.3
+git reset --hard
 git apply ${project_dir}/utils/public-deps.patch
 git apply ${project_dir}/utils/level-zero-runtime-log.patch
 popd
@@ -21,21 +21,22 @@ git apply ${project_dir}/externals/mlir-extensions/build_tools/patches/*
 git apply ${project_dir}/utils/llvm-error-msg.patch
 popd
 
+pushd externals/stablehlo
+git reset --hard
+git apply ${project_dir}/utils/token-name.patch
+popd
 
 cmake -GNinja -Bbuild \
     -DCMAKE_BUILD_TYPE=Release \
     -DPython3_FIND_VIRTUALENV=ONLY \
     -DLLVM_ENABLE_PROJECTS=mlir \
-    -DLLVM_EXTERNAL_PROJECTS="torch-mlir;Imex" \
+    -DLLVM_EXTERNAL_PROJECTS="torch-mlir;Imex;tpp-mlir" \
     -DLLVM_EXTERNAL_TORCH_MLIR_SOURCE_DIR="$PWD" \
     -DLLVM_EXTERNAL_IMEX_SOURCE_DIR="$PWD/externals/mlir-extensions" \
+    -DLLVM_EXTERNAL_TPP_MLIR_SOURCE_DIR="$PWD/externals/tpp-mlir" \
     -DMLIR_ENABLE_BINDINGS_PYTHON=ON \
     -DIMEX_ENABLE_L0_RUNTIME=ON \
     -DLLVM_TARGETS_TO_BUILD=host \
     externals/llvm-project/llvm
 
 cmake --build build
-
-# a dirty hack for library search
-cp build/lib/liblevel-zero-runtime.so* build/tools/torch-mlir/python_packages/torch_mlir/torch_mlir/_mlir_libs/
-
