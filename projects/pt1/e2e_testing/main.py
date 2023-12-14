@@ -27,6 +27,7 @@ from torch_mlir_e2e_test.configs import (
 from torch_mlir_e2e_test.linalg_on_tensors_backends.refbackend import RefBackendLinalgOnTensorsBackend
 from torch_mlir_e2e_test.onnx_backends.linalg_on_tensors import LinalgOnTensorsOnnxBackend
 from torch_mlir_e2e_test.linalg_on_tensors_backends.cpuprotobackend import CpuProtoLinalgOnTensorsBackend
+from torch_mlir_e2e_test.linalg_on_tensors_backends.xsmmprotobackend import XsmmProtoLinalgOnTensorsBackend
 from torch_mlir_e2e_test.tosa_backends.linalg_on_tensors import LinalgOnTensorsTosaBackend
 from torch_mlir_e2e_test.stablehlo_backends.linalg_on_tensors import LinalgOnTensorsStablehloBackend
 
@@ -49,7 +50,7 @@ from torch_mlir_e2e_test.test_suite import register_all_tests
 register_all_tests()
 
 def _get_argparse():
-    config_choices = ["native_torch", "torchscript", "linalg", "stablehlo", "make_fx_tosa", "tosa", "lazy_tensor_core", "torchdynamo", "onnx", "cpuproto"]
+    config_choices = ["native_torch", "torchscript", "linalg", "stablehlo", "make_fx_tosa", "tosa", "lazy_tensor_core", "torchdynamo", "onnx", "cpuproto", "xsmm"]
     parser = argparse.ArgumentParser(description="Run torchscript e2e tests.")
     parser.add_argument("-c", "--config",
         choices=config_choices,
@@ -160,6 +161,10 @@ def main():
         crashing_set = ONNX_CRASHING_SET
     elif args.config == "cpuproto":
         config = TorchDynamoTestConfig(CpuProtoLinalgOnTensorsBackend(opts), opts=opts)
+        xfail_set = TORCHDYNAMO_XFAIL_SET
+        crashing_set = TORCHDYNAMO_CRASHING_SET
+    elif args.config == "xsmm":
+        config = TorchDynamoTestConfig(XsmmProtoLinalgOnTensorsBackend(opts), opts=opts)
         xfail_set = TORCHDYNAMO_XFAIL_SET
         crashing_set = TORCHDYNAMO_CRASHING_SET
 

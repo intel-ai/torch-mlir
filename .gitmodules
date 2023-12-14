@@ -4,3 +4,6 @@
 [submodule "externals/stablehlo"]
 	path = externals/stablehlo
 	url = https://github.com/openxla/stablehlo.git
+[submodule "externals/tpp-mlir"]
+	path = externals/tpp-mlir
+	url = https://github.com/intel-ai/tpp-mlir
