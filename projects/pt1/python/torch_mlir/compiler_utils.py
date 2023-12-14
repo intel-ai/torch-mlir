@@ -30,6 +30,8 @@ class StderrToFile:
         self._file_name = file
 
     def __enter__(self):
+        if os.path.exists(self._file_name):
+            os.remove(self._file_name)
         self._fd = os.open(self._file_name, os.O_WRONLY | os.O_CREAT)
         self._old_stderr_fd = os.dup(2)
         os.dup2(self._fd, 2)
