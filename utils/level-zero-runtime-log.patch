@@ -44,7 +44,7 @@ index ccf2258..edf807e 100644
    desc.inputSize = dataSize;
    desc.pBuildFlags = build_flags;
    CHECK_ZE_RESULT(zeModuleCreate(gpuL0Queue->zeContext_, gpuL0Queue->zeDevice_,
-                                  &desc, &zeModule, nullptr));
+                                  &desc, &zeModule, buildlog));
 +  size_t logSize = 0;
 +  CHECK_ZE_RESULT(zeModuleBuildLogGetString(buildlog, &logSize, nullptr));
 +  std::string strLog(logSize, ' ');
