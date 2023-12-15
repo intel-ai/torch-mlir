@@ -19,3 +19,5 @@ dependencies:
   - llvm
   - python      ==3.11
   - mkl
+  - git
+  - llvm-openmp
