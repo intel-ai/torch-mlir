@@ -1,0 +1,12 @@
+diff --git a/stablehlo/dialect/StablehloOps.h b/stablehlo/dialect/StablehloOps.h
+index 76064150..2dd0aba5 100644
+--- a/stablehlo/dialect/StablehloOps.h
++++ b/stablehlo/dialect/StablehloOps.h
+@@ -75,6 +75,7 @@ class StablehloDialect : public Dialect {
+ class TokenType : public Type::TypeBase<TokenType, Type, TypeStorage> {
+  public:
+   using Base::Base;
++  static constexpr auto name = "stablehlo.token";
+ };
+ 
+ // Verifies the source target pairs attached to collective permute.
