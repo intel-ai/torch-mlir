@@ -18,3 +18,4 @@ dependencies:
   - python      ==3.11
   - level-zero-devel
   - git
+  - llvm-openmp
