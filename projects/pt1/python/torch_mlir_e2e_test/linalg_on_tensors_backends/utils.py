@@ -13,7 +13,13 @@ def _find_shared_lib(name):
 def _collect_shared_libs(opts: TestOptions):
     shared_libs = []
     if opts.use_kernels:
-        shared_libs.append(_find_shared_lib("libTorchMLIRKernels.so"))
+        if opts.kernels_source == 'mkl':
+            kernels_lib = "libTorchMLIRKernels.so"
+        elif opts.kernels_source == 'dnn':
+            kernels_lib = "libTorchMLIRDNNKernels.so"
+        else:
+            raise RuntimeError(f"Unknown kernels source: {opts.kernels_source}")
+        shared_libs.append(_find_shared_lib(kernels_lib))
     if opts.use_gpu_runtime:
         shared_libs.append(_find_shared_lib("liblevel-zero-runtime.so"))
     return shared_libs

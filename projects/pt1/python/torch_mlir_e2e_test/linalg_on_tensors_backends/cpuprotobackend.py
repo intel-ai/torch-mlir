@@ -23,7 +23,7 @@ __all__ = [
 
 def _build_lowering_pipeline(opts: TestOptions):
     passes = [
-        "fuse-linalg-ops",
+        # "fuse-linalg-ops",
         "func.func(refback-generalize-tensor-pad)",
         # Apply some optimizations. It would be great if MLIR had more useful
         # optimizations that worked out of the box here.

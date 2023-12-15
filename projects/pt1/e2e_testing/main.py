@@ -102,6 +102,9 @@ Available options:
                         default=False,
                         action="store_true",
                         help="Enable linalg ops replacement with runtime library kernel calls.")
+    parser.add_argument("--kernels-source",
+                        default="mkl",
+                        help="Kernels library to use (mkl or dnn)")
     parser.add_argument("--enable-timer",
                         default=False,
                         action="store_true",
@@ -114,7 +117,7 @@ Available options:
 
 def main():
     args = _get_argparse().parse_args()
-    opts = TestOptions(dumps=args.dump, use_kernels=args.use_kernels, debug_timer=args.enable_timer, use_gpu_runtime=args.use_gpu_runtime)
+    opts = TestOptions(dumps=args.dump, use_kernels=args.use_kernels, debug_timer=args.enable_timer, use_gpu_runtime=args.use_gpu_runtime, kernels_source=args.kernels_source)
 
     all_test_unique_names = set(
         test.unique_name for test in GLOBAL_TEST_REGISTRY)
