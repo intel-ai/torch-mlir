@@ -62,6 +62,39 @@ def _returns_empty_tuple(fx_graph: torch.fx.GraphModule) -> bool:
     return True
 
 
+def transform(gm: torch.fx.GraphModule):
+
+    print("============transform============")
+    # Modify gm.graph
+    for node in gm.graph.nodes:
+        # Checks if we're calling a function (i.e:
+        # torch.add)
+        if node.op == 'call_function':
+            # The target attribute is the function
+            # that call_function calls.
+            # call_function[target=torch.ops.aten.add.Tensor](args = (%arg64_1, 1), kwargs = {})
+            if node.target == torch.ops.aten.add.Tensor:
+                if len(node.args) != 2 or node.kwargs != {}:
+                    print("skipping --- node: ", node, "args: ", node.args, " kwargs: ", node.kwargs)
+                elif not isinstance(node.args[1], torch.fx.node.Node):
+                    node.target = torch.ops.aten.add.Scalar
+                    print("node: ", node, "args: ", node.args, " kwargs: ", node.kwargs)
+                    print("argtypes: ", type(node.args[0]), type(node.args[1]))
+            if node.target == torch.ops.aten.mul.Tensor:
+                if len(node.args) != 2 or node.kwargs != {}:
+                    print("skipping --- node: ", node, "args: ", node.args, " kwargs: ", node.kwargs)
+                elif not isinstance(node.args[1], torch.fx.node.Node):
+                    node.target = torch.ops.aten.mul.Scalar
+                    print("node: ", node, "args: ", node.args)
+                # node.target = torch.mul
+
+    gm.graph.lint() # Does some checks to make sure the
+
+    # Recompile the forward() method of `gm` from its Graph
+    gm.recompile()
+    print("============transform============")
+
+
 def jit(
     model: torch.nn.Module,
     example_args: _example_args,
@@ -98,8 +131,16 @@ def jit(
         assert not _returns_empty_tuple(gm), "encountered graph that does not return anything"
 
         if opts.is_dump_enabled("fx-graph"):
+            with open(f"{model._get_name()}.{symbol}-fx-graph-before.py", "w") as f:
+                    print(gm.code, file=f)
+
+        transform(gm)
+
+        if opts.is_dump_enabled("fx-graph"):
             with open(f"{model._get_name()}.{symbol}-fx-graph.txt", "w") as f:
                 print(gm.graph, file=f)
+            with open(f"{model._get_name()}.{symbol}-fx-graph.py", "w") as f:
+                print(gm.code, file=f)
 
         nonlocal mlir_module
         *_, model_name, nth_graph = get_aot_compilation_context()
@@ -108,7 +149,6 @@ def jit(
         if opts.is_dump_enabled("torch-mlir"):
             with open(f"{model._get_name()}.{symbol}-torch.mlir", "w") as f:
                 print(mlir_module, file=f)
-
         return gm
 
     my_backend = aot_autograd(fw_compiler=my_aot_autograd_backend,
