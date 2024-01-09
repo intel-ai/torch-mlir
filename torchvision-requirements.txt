@@ -1,3 +1,4 @@
--f https://download.pytorch.org/whl/nightly/cpu/torch_nightly.html
+--trusted-host spr.x1infra.com
+-f http://spr.x1infra.com/pytorch_whl_nightly_cpu/torch_nightly.html
 --pre
-torchvision==0.17.0.dev20231105
+torchvision==0.17.0.dev20231116
