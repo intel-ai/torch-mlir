@@ -88,6 +88,7 @@ class BatchMlpLayerModule(torch.nn.Module):
         torch.manual_seed(0)
         self.fc0 = nn.Linear(3, 5)
         self.tanh0 = nn.Tanh()
+
     @export
     @annotate_args([
         None,
@@ -128,11 +129,6 @@ def model_factory():
 
 
 test_input = torch.rand(1, 128, 128)
-w = model.linear1.weight.detach().numpy()
-b = model.linear1.bias.detach().numpy()
-print("in shape: ", test_input.shape)
-print(" w shape: ", w.shape)
-print(" b shape: ", b.shape)
 
 
 @register_test_case(module_factory=model_factory)

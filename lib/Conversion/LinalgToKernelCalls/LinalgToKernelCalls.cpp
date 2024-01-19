@@ -39,15 +39,22 @@ convertLinalgOpsInFunc(func::FuncOp func,
   func.walk([&](linalg::LinalgOp op) {
     mlir::Operation *valid_op;
     std::string fn_name;
+    bool is_conv = false;
     if (isa<linalg::MatmulOp>(op)) {
       valid_op = op;
+      // TODO Check perf difference
       fn_name = "matmul_kernel_";
+      // fn_name = "linalg_matmul_blas_";
     } else if (isa<linalg::MatmulTransposeAOp>(op)) {
       valid_op = op;
       fn_name = "matmul_transpose_a_kernel_";
     } else if (isa<linalg::MatmulTransposeBOp>(op)) {
       valid_op = op;
       fn_name = "matmul_transpose_b_kernel_";
+    } else if (isa<linalg::Conv2DNchwFchwOp>(op)) {
+      valid_op = op;
+      is_conv = true;
+      fn_name = "conv_";
     } else {
       return;
     }
@@ -79,17 +86,36 @@ convertLinalgOpsInFunc(func::FuncOp func,
 
     llvm::raw_string_ostream rss(fn_name);
     lhs_elem_type.print(rss);
+
     if (!usedKernels.count(fn_name)) {
-      usedKernels.emplace(
-          fn_name,
-          SmallVector<Type>({unranked_type, unranked_type, unranked_type}));
+      if (is_conv) {
+        auto conv = cast<linalg::Conv2DNchwFchwOp>(valid_op);
+        usedKernels.emplace(
+            fn_name,
+            SmallVector<Type>({conv.getStridesAttr().getElementType(),
+                               conv.getStridesAttr().getElementType(),
+                               unranked_type, unranked_type, unranked_type}));
+      } else {
+        usedKernels.emplace(
+            fn_name,
+            SmallVector<Type>({unranked_type, unranked_type, unranked_type}));
+      }
     }
 
     SmallVector<Value> unranked_ops;
+    if (is_conv) {
+      auto conv = cast<linalg::Conv2DNchwFchwOp>(valid_op);
+      for (auto s : conv.getStrides()) {
+        unranked_ops.push_back(builder.create<arith::ConstantIntOp>(
+            valid_op->getLoc(), s.getZExtValue(),
+            conv.getStridesAttr().getElementType()));
+      }
+    }
     for (OpOperand &operand : valid_op->getOpOperands()) {
       unranked_ops.push_back(builder.create<memref::CastOp>(
           operand.get().getLoc(), unranked_type, operand.get()));
     }
+
     builder.create<func::CallOp>(valid_op->getLoc(), fn_name,
                                  valid_op->getResultTypes(), unranked_ops);
     replacedOps.push_back(valid_op);

@@ -83,7 +83,7 @@ def get_ctype_func(func_name):
 class RefBackendInvoker:
 
     def __init__(self, module, shared_libs=None, logger=None):
-        self.ee = ExecutionEngine(module, shared_libs=shared_libs)
+        self.ee = ExecutionEngine(module, opt_level=3, shared_libs=shared_libs)
         self.result = None
         self.logger = logger
 
