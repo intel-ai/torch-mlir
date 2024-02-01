@@ -104,6 +104,7 @@ def BatchMlpLayerModule_basic(module, tu: TestUtils):
 class MLP(torch.nn.Module):
     def __init__(self, input_dim, output_dim):
         super().__init__()
+        torch.manual_seed(0)
         self.flatten = torch.nn.Flatten()
         self.linear1 = torch.nn.Linear(input_dim, input_dim // 2)
         # self.relu = torch.nn.ReLU()
@@ -121,22 +122,21 @@ class MLP(torch.nn.Module):
         # x = self.linear2(x)
         return x
 
-model = MLP(128 * 128, 0)
+# model = MLP(128 * 128, 0)
 
-def model_factory():
-    return model
+# def model_factory():
+#     return model
+
+# test_input = torch.rand(1, 128, 128)
+# w = model.linear1.weight.detach().numpy()
+# b = model.linear1.bias.detach().numpy()
+# print("in shape: ", test_input.shape)
+# print(" w shape: ", w.shape)
+# print(" b shape: ", b.shape)
 
 
-test_input = torch.rand(1, 128, 128)
-w = model.linear1.weight.detach().numpy()
-b = model.linear1.bias.detach().numpy()
-print("in shape: ", test_input.shape)
-print(" w shape: ", w.shape)
-print(" b shape: ", b.shape)
-
-
-@register_test_case(module_factory=model_factory)
+@register_test_case(module_factory=lambda: MLP(128 * 128, 0))
 def MLP_basic(module, tu: TestUtils):
-    out = module.forward(test_input)
+    out = module.forward(tu.rand(1, 128, 128))
     print("[test body] out shape: ", out.size())
 
