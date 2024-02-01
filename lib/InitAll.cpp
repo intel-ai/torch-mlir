@@ -56,13 +56,14 @@ void mlir::torch::registerAllDialects(mlir::DialectRegistry &registry) {
   registry.insert<mlir::torch::Torch::TorchDialect>();
   registry.insert<mlir::torch::TorchConversion::TorchConversionDialect>();
   registry.insert<mlir::torch::TMTensor::TMTensorDialect>();
-  ::imex::registerAllDialects(registry);
-  mlir::func::registerInlinerExtension(registry);
-
   registry.insert<mlir::tpp::TppDialect>();
   registry.insert<mlir::xsmm::XsmmDialect>();
   registry.insert<mlir::check::CheckDialect>();
   registry.insert<mlir::perf::PerfDialect>();
+
+  ::imex::registerAllDialects(registry);
+  mlir::func::registerInlinerExtension(registry);
+
   mlir::linalgx::registerTransformDialectExtension(registry);
   mlir::check::registerBufferizableOpInterfaceExternalModels(registry);
   mlir::perf::registerBufferizableOpInterfaceExternalModels(registry);
@@ -71,7 +72,6 @@ void mlir::torch::registerAllDialects(mlir::DialectRegistry &registry) {
   // Add the following to include *all* MLIR Core dialects, or selectively
   // include what you need like above. You only need to register dialects that
   // will be *parsed* by the tool, not the one generated.
-  registerAllDialects(registry);
   mlir::linalg::registerTransformDialectExtension(registry);
   mlir::tensor::registerTransformDialectExtension(registry);
   registerAllToLLVMIRTranslations(registry);
