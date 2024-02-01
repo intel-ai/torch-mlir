@@ -1,4 +1,3 @@
---trusted-host spr.x1infra.com
--f http://spr.x1infra.com/pytorch_whl_nightly_cpu/torch_nightly.html
+-f https://download.pytorch.org/whl/nightly/cpu/torch_nightly.html
 --pre
 torch==2.4.0.dev20240318

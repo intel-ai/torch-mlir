@@ -26,6 +26,7 @@ set(LinkedLibs
   MLIRArmSMEToLLVMIRTranslation
   MLIRArmSVEToLLVMIRTranslation
   MLIRSPIRVToLLVMIRTranslation
+  MLIRToLLVMIRTranslationRegistration
 
   # Dialects.
   TorchMLIRTMTensorDialect
@@ -44,18 +45,18 @@ set(LinkedLibs
   TPPIR
   TPPPipeline
   TPPTransforms
-  TPPTppDialect
+  # TPPTppDialect
   TPPLinalgXTransformOps
   TPPXsmmDialect
   TPPCheckToLoops
   TPPLinalgToFunc
-  TPPLinalgToTpp
+  # TPPLinalgToTpp
   TPPLinalgToXSMM
-  TPPMemRefToXSMM
+  # TPPMemRefToXSMM
   TPPPerfToFunc
   TPPPerfToLoop
-  TPPTppToLoops
-  TPPTppToXSMM
+  # TPPTppToLoops
+  # TPPTppToXSMM
   TPPXsmmToFunc
   TPPTestLib
   xsmm

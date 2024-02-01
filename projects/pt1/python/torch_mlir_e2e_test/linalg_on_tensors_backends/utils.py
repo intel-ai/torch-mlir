@@ -22,8 +22,6 @@ def _collect_shared_libs(opts: TestOptions, libs = []):
     shared_libs = [_find_shared_lib(lib) for lib in libs]
     if opts.use_kernels:
         shared_libs.append(_find_shared_lib("libTorchMLIRKernels.so"))
-    if opts.use_gpu_runtime:
-        shared_libs.append(_find_shared_lib("liblevel-zero-runtime.so"))
     if opts.use_omp:
         shared_libs.append(_find_shared_lib("libiomp5.so"))
     return shared_libs

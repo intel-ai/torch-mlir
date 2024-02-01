@@ -7,11 +7,15 @@ project_dir=$PWD
 echo "Using project dir: ${project_dir}"
 
 # assuming git submodule update --init was done and all the code is present
-git submodule foreach --recursive git checkout .
+# git submodule foreach --recursive git checkout .
+
+pushd externals/llvm-project
+git reset --hard
+git checkout `cat ${project_dir}/externals/tpp-mlir/build_tools/llvm_version.txt`
+popd
 
 pushd externals/stablehlo
 git reset --hard
-git apply ${project_dir}/utils/token-name.patch
 popd
 
 cmake -GNinja -Bbuild \
@@ -22,7 +26,6 @@ cmake -GNinja -Bbuild \
     -DLLVM_EXTERNAL_TORCH_MLIR_SOURCE_DIR="$PWD" \
     -DLLVM_EXTERNAL_TPP_MLIR_SOURCE_DIR="$PWD/externals/tpp-mlir" \
     -DMLIR_ENABLE_BINDINGS_PYTHON=ON \
-    -DIMEX_ENABLE_L0_RUNTIME=ON \
     -DLLVM_TARGETS_TO_BUILD=host \
     externals/llvm-project/llvm
 
