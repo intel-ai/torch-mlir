@@ -57,10 +57,12 @@ def _verify_fx_graph_conforms_to_subset(g: torch.fx.Graph):
             )
 
     for node in g.nodes:
-        if node.op not in ("placeholder", "call_function", "output"):
+        if node.op not in ("placeholder", "call_function", "output", "get_attr"):
             raise Exception(f"Unsupported op: {node.op}")
         if node.op == "placeholder":
             _check_meta_val(node)
+        if node.op == "get_attr":
+            print("node.target: ", g.owning_module._buffers[node.target])
         if node.op == "call_function":
             _check_meta_val(node)
             # We only support OpOverload for computations because the `torch`
@@ -152,7 +154,6 @@ def _convert_dtype_to_mlir_type(dtype: torch.dtype) -> str:
     if dtype == torch.complex128:
         return "complex<f64>"
 
-
     raise Exception(f"Unsupported dtype: {dtype}")
 
 
@@ -191,64 +192,40 @@ def _extract_function_type_from_graph(g: torch.fx.Graph) -> ir.FunctionType:
 
 DTYPE_TO_INT = {
     # TODO(DNS): Fill in from AT_FORALL_SCALAR_TYPES_WITH_COMPLEX_AND_QINTS
-    torch.uint8:
-    0,
-    torch.int8:
-    1,
-    torch.int16:
-    2,
-    torch.int32:
-    3,
-    torch.int64:
-    4,
-    torch.float16:
-    5,
-    torch.float32:
-    6,
-    torch.float64:
-    7,
+    torch.uint8: 0,
+    torch.int8: 1,
+    torch.int16: 2,
+    torch.int32: 3,
+    torch.int64: 4,
+    torch.float16: 5,
+    torch.float32: 6,
+    torch.float64: 7,
     # torch.complex_half 8
-    torch.complex64:
-    9,
-    torch.complex128:
-    10,
-    torch.bool:
-    11,
-    torch.qint8:
-    12,
-    torch.quint8:
-    13,
+    torch.complex64: 9,
+    torch.complex128: 10,
+    torch.bool: 11,
+    torch.qint8: 12,
+    torch.quint8: 13,
     # torch.qint32 14
-    torch.bfloat16:
-    15,
+    torch.bfloat16: 15,
 }
 
 MEMORY_FORMAT_TO_INT = {
     # https://github.com/pytorch/pytorch/c10/core/MemoryFormat.h#L28
-    torch.contiguous_format:
-    0,
-    torch.preserve_format:
-    1,
-    torch.channels_last:
-    2,
-    torch.channels_last_3d:
-    3,
+    torch.contiguous_format: 0,
+    torch.preserve_format: 1,
+    torch.channels_last: 2,
+    torch.channels_last_3d: 3,
 }
 
 LAYOUT_TO_INT = {
     # https://github.com/pytorch/pytorch/blob/master/torch/csrc/utils/tensor_layouts.cpp
-    torch.strided:
-    0,
-    torch.sparse_coo:
-    1,
-    torch.sparse_csr:
-    2,
-    torch.sparse_csc:
-    3,
-    torch.sparse_bsr:
-    4,
-    torch.sparse_bsc:
-    5,
+    torch.strided: 0,
+    torch.sparse_coo: 1,
+    torch.sparse_csr: 2,
+    torch.sparse_csc: 3,
+    torch.sparse_bsr: 4,
+    torch.sparse_bsc: 5,
 }
 
 
@@ -298,6 +275,10 @@ class _FXGraphImporter:
                             node, 0
                         )] = self._body_block.arguments[num_placeholders_seen]
                         num_placeholders_seen += 1
+                    if node.op == "get_attr":
+                        buff = self._g.owning_module._buffers[node.target]
+                        mlir_type = _import_fake_tensor_as_mlir_type(buff)
+                        self._env[(node, 0)] = self._import_argument(buff, buff)
                     if node.op == "call_function":
                         if node.target is operator.getitem:
                             self._env[(node, 0)] = self._env[(node.args[0],
@@ -328,7 +309,8 @@ class _FXGraphImporter:
 
         # DNS: Unregistered ops
         assert ir.Context.current.is_registered_operation(
-            mlir_op_name), f"Unregistered operation: {mlir_op_name}"
+            mlir_op_name
+        ), f"Unregistered operation: {mlir_op_name}"
 
         # Construct the Operation.
         result_types = _mlir_types_for_node(node)
@@ -424,6 +406,46 @@ class _FXGraphImporter:
                 _torch_type_to_mlir_type(expected_type),
                 els,
             ).result
+        if isinstance(arg, torch.Tensor):
+            import numpy as np
+
+            torch_to_numpy_dtype_dict = {
+                torch.bool: np.bool_,
+                torch.uint8: np.uint8,
+                torch.int8: np.int8,
+                torch.int16: np.int16,
+                torch.int32: np.int32,
+                torch.int64: np.int64,
+                torch.float16: np.float16,
+                torch.float32: np.float32,
+                torch.float64: np.float64,
+                torch.complex64: np.complex64,
+                torch.complex128: np.complex128,
+                torch.bfloat16: np.float32,
+                torch.complex32: np.complex64,
+            }
+
+            attrs = vars(expected_type)
+            print(
+                "Creating LiteralOp ",
+                expected_type.type(),
+                " dtype: ",
+                expected_type.dtype,
+                " arg: ",
+                arg,
+            )
+            # return self._import_argument(arg.tolist(), expected_type.type())
+            element_type = expected_type.type()
+            # return torch_dialect.ConstantFloatOp(ir.FloatAttr.get_f64(arg)).result
+            py_float_list = [
+                arg.tolist()
+            ]  # [self._import_argument(e, element_type) for e in [arg.tolist()]]
+            # float_list = self._import_argument(py_float_list)
+            array = np.array(
+                arg.tolist(), dtype=torch_to_numpy_dtype_dict[expected_type.dtype]
+            )
+            attr = ir.DenseElementsAttr.get(array)
+            return torch_dialect.vtensor_literal(attr)
         raise Exception(f"Unsupported literal: {arg}")
 
 
