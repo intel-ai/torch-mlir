@@ -22,7 +22,7 @@ __all__ = [
 
 def _build_lowering_pipeline(opts: TestOptions):
     passes = [
-        "fuse-linalg-ops",
+        # "fuse-linalg-ops",
         "func.func(refback-generalize-tensor-pad)",
         # Apply some optimizations. It would be great if MLIR had more useful
         # optimizations that worked out of the box here.
@@ -34,6 +34,7 @@ def _build_lowering_pipeline(opts: TestOptions):
         "func.func(linalg-fuse-elementwise-ops)",
         "convert-shape-to-std",
         # Bufferize.
+        "one-shot-bufferize",
         "func.func(scf-bufferize)",
         "func.func(tm-tensor-bufferize)",
         "func.func(empty-tensor-to-alloc-tensor)",
@@ -43,44 +44,52 @@ def _build_lowering_pipeline(opts: TestOptions):
         "refback-mlprogram-bufferize",
         "func.func(tensor-bufferize)",
         "func.func(finalizing-bufferize)",
-        "func.func(buffer-deallocation)",
+        #"func.func(buffer-deallocation)",
+        "ownership-based-buffer-deallocation",
+        "canonicalize",
+        "buffer-deallocation-simplification",
+        "bufferization-lower-deallocations",
+        "cse",
+        "canonicalize",
         # Munge to make it ExecutionEngine compatible.
         # Specifically, we rewrite calling convention boundaries to be in terms
         # of unranked memref, and we rewrite the return to actually be a
         # callback that consumes the return (the final munged function always
         # returns void at the C level -- we get the return value by providing the
         # callback).
-        "refback-munge-calling-conventions"
+        "refback-munge-calling-conventions",
     ]
     if opts.use_kernels:
         # Introduce kernel calls for operations we want to execute using library
         # kernels.
         passes.append("convert-linalg-ops-to-kernel-calls")
-    passes.extend([
-        # Insert global variable and instruction sequence for getting the next
-        # global seed used in stateful rng.
-        # Lower to LLVM
-        "func.func(tm-tensor-to-loops)",
-        "func.func(refback-munge-memref-copy)",
-        "func.func(convert-linalg-to-loops)",
-        "func.func(lower-affine)",
-        "convert-scf-to-cf",
-        "func.func(refback-expand-ops-for-llvm)",
-        "func.func(arith-expand)",
-        "func.func(convert-math-to-llvm)",
-        # Handle some complex mlir::math ops (e.g. atan2)
-        "convert-math-to-libm",
-        "expand-strided-metadata",
-        "finalize-memref-to-llvm",
-        "lower-affine",
-        "convert-bufferization-to-memref",
-        "finalize-memref-to-llvm",
-        "func.func(convert-arith-to-llvm)",
-        "convert-func-to-llvm",
-        "convert-cf-to-llvm",
-        "convert-complex-to-llvm",
-        "reconcile-unrealized-casts"
-    ])
+    passes.extend(
+        [
+            # Insert global variable and instruction sequence for getting the next
+            # global seed used in stateful rng.
+            # Lower to LLVM
+            "func.func(tm-tensor-to-loops)",
+            "func.func(refback-munge-memref-copy)",
+            "func.func(convert-linalg-to-loops)",
+            "func.func(lower-affine)",
+            "convert-scf-to-cf",
+            "func.func(refback-expand-ops-for-llvm)",
+            "func.func(arith-expand)",
+            "func.func(convert-math-to-llvm)",
+            # Handle some complex mlir::math ops (e.g. atan2)
+            "convert-math-to-libm",
+            "expand-strided-metadata",
+            "finalize-memref-to-llvm",
+            "lower-affine",
+            "convert-bufferization-to-memref",
+            "finalize-memref-to-llvm",
+            "func.func(convert-arith-to-llvm)",
+            "convert-func-to-llvm",
+            "convert-cf-to-llvm",
+            "convert-complex-to-llvm",
+            "reconcile-unrealized-casts",
+        ]
+    )
     return "builtin.module(" + ",".join(passes) + ")"
 
 
@@ -101,6 +110,7 @@ def _collect_shared_libs(opts: TestOptions):
 
 class CpuProtoLinalgOnTensorsBackend(LinalgOnTensorsBackend):
     """Main entry-point for the reference backend."""
+
     def __init__(self, opts: TestOptions = TestOptions()):
         super().__init__()
         self._opts = opts
@@ -119,15 +129,27 @@ class CpuProtoLinalgOnTensorsBackend(LinalgOnTensorsBackend):
           An opaque, backend specific compiled artifact object that can be
           passed to `load`.
         """
-        with DebugTimer('CpuProtoLinalgOnTensorsBackend.compile()', logger=print if self._opts.debug_timer else None):
+        with DebugTimer(
+            "CpuProtoLinalgOnTensorsBackend.compile()",
+            logger=print if self._opts.debug_timer else None,
+        ):
             run_pipeline_with_repro_report(
-                imported_module, _build_lowering_pipeline(self._opts),
-                "Lowering Linalg-on-Tensors IR to LLVM with RefBackend", ir_file)
+                imported_module,
+                _build_lowering_pipeline(self._opts),
+                "Lowering Linalg-on-Tensors IR to LLVM with RefBackend",
+                ir_file,
+            )
         return imported_module
 
     def load(self, module) -> RefBackendInvoker:
         """Loads a compiled artifact into the runtime."""
-        with DebugTimer('CpuProtoLinalgOnTensorsBackend.load()', logger=print if self._opts.debug_timer else None):
-            invoker = RefBackendInvoker(module,
-                                    shared_libs=_collect_shared_libs(self._opts), logger=print if self._opts.debug_timer else None)
+        with DebugTimer(
+            "CpuProtoLinalgOnTensorsBackend.load()",
+            logger=print if self._opts.debug_timer else None,
+        ):
+            invoker = RefBackendInvoker(
+                module,
+                shared_libs=_collect_shared_libs(self._opts),
+                logger=print if self._opts.debug_timer else None,
+            )
         return invoker

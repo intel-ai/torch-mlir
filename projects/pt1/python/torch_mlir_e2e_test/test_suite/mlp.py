@@ -203,7 +203,6 @@ def ResNext_basic(module, tu: TestUtils):
 # dynamo_callable = dynamo.optimize(my_backend)(model)
 # dyn_res = dynamo_callable(input_ids=input_ids.input_ids, attention_mask=input_ids.attention_mask, output_hidden_states=False, use_cache=False)
 
-
 class GPTJ_wrap(torch.nn.Module):
     def __init__(self):
         super().__init__()
@@ -214,10 +213,24 @@ class GPTJ_wrap(torch.nn.Module):
         )
         model.eval()
         tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-j-6B")
+        from transformers import GPTJModel, GPTJConfig
+        config_mine = model.config
+        print("orig n layers: ", config_mine)
+        config_mine.activation_function = "relu"
+        config_mine.n_layer = 1
+        config_mine.n_head = 1
+        config_mine.use_cache = False
+        gpt_mine = GPTJModel(config_mine)
+        gpt_mine.eval()
         prompt = "There are several ways to travel, but my favourite is"
         input_ids = tokenizer(prompt, return_tensors="pt")
+        # kwargs = {
+        #     "output_hidden_states": False,
+        #     "use_cache": False
+        # }
+        # torch.onnx.export(gpt_mine, input_ids.input_ids, 'gptj_kw_small.onnx', input_names=["input_ids"], output_names=["logits"])
 
-        self.gptj = model
+        self.gptj = gpt_mine
         # self.relu = torch.nn.ReLU()
         # self.linear2 = torch.nn.Linear(input_dim // 2, output_dim)
 
