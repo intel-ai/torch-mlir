@@ -853,8 +853,15 @@ public:
       Value outputTensorExpanded = expandGroups(outputTensor, 1);
 
       // TODO: add 1D and 3D case
+      // conv = rewriter
+      //            .create<linalg::Conv2DNgchwFgchwOp>(
+      //                loc, outputTensorExpanded.getType(),
+      //                ValueRange{paddedInputExpanded, weightExpanded},
+      //                outputTensorExpanded, stridesAttr, dilationAttr)
+      //            .getResult(0);
+
       conv = rewriter
-                 .create<linalg::Conv2DNgchwFgchwOp>(
+                 .create<linalg::Conv2DNgchwGfchwOp>(
                      loc, outputTensorExpanded.getType(),
                      ValueRange{paddedInputExpanded, weightExpanded},
                      outputTensorExpanded, stridesAttr, dilationAttr)
