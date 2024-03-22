@@ -7,11 +7,19 @@ project_dir=$PWD
 echo "Using project dir: ${project_dir}"
 
 # assuming git submodule update --init was done and all the code is present
-git submodule foreach --recursive git checkout .
+# git submodule foreach --recursive git checkout .
+
+pushd externals/llvm-project
+git reset --hard
+git checkout `cat ${project_dir}/externals/tpp-mlir/build_tools/llvm_version.txt`
+# mkdir -p build
+# export CUSTOM_LLVM_ROOT=`pwd`/build
+# echo $CUSTOM_LLVM_ROOT
+# export PATH=$CUSTOM_LLVM_ROOT/bin:$PATH
+popd
 
 pushd externals/stablehlo
 git reset --hard
-git apply ${project_dir}/utils/token-name.patch
 popd
 
 cmake -GNinja -Bbuild \

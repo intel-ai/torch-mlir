@@ -40,8 +40,8 @@
 #include "TPP/Dialect/Check/CheckDialect.h"
 #include "TPP/Dialect/Perf/BufferizableOpInterfaceImpl.h"
 #include "TPP/Dialect/Perf/PerfDialect.h"
-#include "TPP/Dialect/Tpp/BufferizableOpInterfaceImpl.h"
-#include "TPP/Dialect/Tpp/TppDialect.h"
+// #include "TPP/Dialect/Tpp/BufferizableOpInterfaceImpl.h"
+// #include "TPP/Dialect/Tpp/TppDialect.h"
 #include "TPP/Dialect/Transform/LinalgXTransformOps.h"
 #include "TPP/Dialect/Xsmm/XsmmDialect.h"
 #include "TPP/Passes.h"
@@ -51,18 +51,18 @@ void mlir::torch::registerAllDialects(mlir::DialectRegistry &registry) {
   registry.insert<mlir::torch::Torch::TorchDialect>();
   registry.insert<mlir::torch::TorchConversion::TorchConversionDialect>();
   registry.insert<mlir::torch::TMTensor::TMTensorDialect>();
-  registry.insert<mlir::tpp::TppDialect>();
+  // registry.insert<mlir::tpp::TppDialect>();
   registry.insert<mlir::xsmm::XsmmDialect>();
   registry.insert<mlir::check::CheckDialect>();
   registry.insert<mlir::perf::PerfDialect>();
 
-  ::imex::registerAllDialects(registry);
+  // ::imex::registerAllDialects(registry);
   mlir::func::registerInlinerExtension(registry);
 
   mlir::linalgx::registerTransformDialectExtension(registry);
   mlir::check::registerBufferizableOpInterfaceExternalModels(registry);
   mlir::perf::registerBufferizableOpInterfaceExternalModels(registry);
-  mlir::tpp::registerBufferizableOpInterfaceExternalModels(registry);
+  // mlir::tpp::registerBufferizableOpInterfaceExternalModels(registry);
 
   // Add the following to include *all* MLIR Core dialects, or selectively
   // include what you need like above. You only need to register dialects that
@@ -90,7 +90,7 @@ void mlir::torch::registerAllPasses() {
 #ifdef TORCH_MLIR_ENABLE_STABLEHLO
   mlir::stablehlo::registerStablehloLegalizeToLinalgPass();
 #endif
-  ::imex::registerAllPasses();
+  // ::imex::registerAllPasses();
   mlir::tpp::registerTppCompilerPasses();
   mlir::tpp::registerTestStructuralMatchers();
   mlir::tpp::registerTestForToForAllRewrite();
