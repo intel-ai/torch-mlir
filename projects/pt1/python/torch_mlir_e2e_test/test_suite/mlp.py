@@ -21,7 +21,6 @@ class VectorAdd(torch.nn.Module):
 @register_test_case(module_factory=lambda: VectorAdd())
 def VectorAdd_basic(module, tu: TestUtils):
     x = tu.rand(2)
-    print('passing ', x)
     result = module.forward(x)
     print(result)
 
@@ -104,6 +103,7 @@ class BatchMlpLayerModule(torch.nn.Module):
         torch.manual_seed(0)
         self.fc0 = nn.Linear(3, 5)
         self.tanh0 = nn.Tanh()
+
     @export
     @annotate_args([
         None,
@@ -120,8 +120,9 @@ def BatchMlpLayerModule_basic(module, tu: TestUtils):
 class MLP(torch.nn.Module):
     def __init__(self, input_dim, output_dim):
         super().__init__()
-        self.flatten = torch.nn.Flatten()
-        self.linear1 = torch.nn.Linear(input_dim, input_dim // 2)
+        # self.flatten = torch.nn.Flatten()
+        # self.linear1 = torch.nn.Linear(input_dim, input_dim // 2)
+        self.conv2d = torch.nn.Conv2d(input_dim, output_dim, 3, stride=2)
         # self.relu = torch.nn.ReLU()
         # self.linear2 = torch.nn.Linear(input_dim // 2, output_dim)
 
@@ -131,24 +132,22 @@ class MLP(torch.nn.Module):
         ([-1, -1, -1], torch.float32, True),
     ])
     def forward(self, x):
-        x = self.flatten(x)
-        x = self.linear1(x)
+        # x = self.flatten(x)
+        # x = self.linear1(x)
+        x = self.conv2d(x)
         # x = self.relu(x)
         # x = self.linear2(x)
         return x
 
-model = MLP(128 * 128, 0)
+# model = MLP(16, 8)
+model = MLP(16, 33)
 
 def model_factory():
     return model
 
 
-test_input = torch.rand(1, 128, 128)
-w = model.linear1.weight.detach().numpy()
-b = model.linear1.bias.detach().numpy()
-print("in shape: ", test_input.shape)
-print(" w shape: ", w.shape)
-print(" b shape: ", b.shape)
+# test_input = torch.rand(16, 16, 3)
+test_input = torch.randn(20, 16, 50, 100)
 
 
 @register_test_case(module_factory=model_factory)
