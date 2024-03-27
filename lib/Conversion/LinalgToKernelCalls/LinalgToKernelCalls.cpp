@@ -41,6 +41,7 @@ convertLinalgOpsInFunc(func::FuncOp func,
     mlir::Operation *valid_op;
     std::string fn_name;
     bool is_conv = false;
+    bool is_group_conv = false;
     if (isa<linalg::MatmulOp>(op)) {
       valid_op = op;
       // TODO Check perf difference
@@ -57,14 +58,14 @@ convertLinalgOpsInFunc(func::FuncOp func,
       valid_op = op;
       is_conv = true;
       fn_name = "conv_";
-      std::exit(1);
+      // std::exit(1);
     } else if (isa<linalg::Conv2DNgchwFgchwOp>(op)) {
       std::cout << "----------> here 3" << std::endl;
       valid_op = op;
-      is_conv = true;
+      is_group_conv = true;
       // fn_name = "conv_";
       std::exit(1);
-    else {
+    } else {
       return;
     }
     auto types = valid_op->getOperandTypes();
@@ -99,6 +100,13 @@ convertLinalgOpsInFunc(func::FuncOp func,
     if (!usedKernels.count(fn_name)) {
       if (is_conv) {
         auto conv = cast<linalg::Conv2DNchwFchwOp>(valid_op);
+        usedKernels.emplace(
+            fn_name,
+            SmallVector<Type>({conv.getStridesAttr().getElementType(),
+                               conv.getStridesAttr().getElementType(),
+                               unranked_type, unranked_type, unranked_type}));
+      } else if (is_group_conv) { 
+        auto conv = cast<linalg::Conv2DNgchwFgchwOp>(valid_op);
         usedKernels.emplace(
             fn_name,
             SmallVector<Type>({conv.getStridesAttr().getElementType(),
