@@ -140,3 +140,57 @@ def MLP_basic(module, tu: TestUtils):
     out = module.forward(test_input)
     print("[test body] out shape: ", out.size())
 
+
+
+from torchvision.models import (
+    vgg16,
+    resnet18,
+    resnet50,
+    resnext50_32x4d,
+    resnext101_32x8d,
+    densenet121,
+    efficientnet_v2_m,
+    mobilenet_v3_large,
+)
+
+
+def ResNext():
+    torch.manual_seed(0)
+    model = resnext50_32x4d()
+    model.eval()
+    return model
+
+
+def ResNet():
+    torch.manual_seed(0)
+    model = resnet50()
+    model.eval()
+    return model
+
+
+def Vgg():
+    torch.manual_seed(0)
+    model = vgg16()
+    model.eval()
+    return model
+
+
+@register_test_case(module_factory=lambda: ResNext())
+def ResNext_basic(module, tu: TestUtils):
+    # out = module.forward(tu.randint(1, 11, high=13000))
+    out = module.forward(tu.rand(1, 3, 224, 224))
+    # model.forward(input_ids=input_ids.input_ids, attention_mask=input_ids.attention_mask, output_hidden_states=False, use_cache=False)
+    # print("gen tokens: ", gen_tokens)
+    return out
+
+
+@register_test_case(module_factory=lambda: ResNet())
+def ResNet_basic(module, tu: TestUtils):
+    out = module.forward(tu.rand(1, 3, 224, 224))
+    return out
+
+
+@register_test_case(module_factory=lambda: Vgg())
+def Vgg_basic(module, tu: TestUtils):
+    out = module.forward(tu.rand(1, 3, 224, 224))
+    return out

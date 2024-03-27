@@ -210,7 +210,7 @@ class RefBackendLinalgOnTensorsBackend(LinalgOnTensorsBackend):
         run_pipeline_with_repro_report(
             imported_module, LOWERING_PIPELINE,
             "Lowering Linalg-on-Tensors IR to LLVM with RefBackend",
-            enable_ir_printing=False, ir_file=ir_file)
+            enable_ir_printing=False, ir_dump_file=ir_file)
         return imported_module
 
     def load(self, module) -> RefBackendInvoker:
