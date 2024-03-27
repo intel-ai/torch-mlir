@@ -34,6 +34,7 @@ namespace {
 LogicalResult
 convertLinalgOpsInFunc(func::FuncOp func,
                        std::map<std::string, SmallVector<Type>> &usedKernels) {
+  std::cout << "----------> here 1" << std::endl;
   OpBuilder builder(func.getBody());
   SmallVector<Operation *> replacedOps;
   func.walk([&](linalg::LinalgOp op) {
@@ -52,10 +53,18 @@ convertLinalgOpsInFunc(func::FuncOp func,
       valid_op = op;
       fn_name = "matmul_transpose_b_kernel_";
     } else if (isa<linalg::Conv2DNchwFchwOp>(op)) {
+      std::cout << "----------> here 2" << std::endl;
       valid_op = op;
       is_conv = true;
       fn_name = "conv_";
-    } else {
+      std::exit(1);
+    } else if (isa<linalg::Conv2DNgchwFgchwOp>(op)) {
+      std::cout << "----------> here 3" << std::endl;
+      valid_op = op;
+      is_conv = true;
+      // fn_name = "conv_";
+      std::exit(1);
+    else {
       return;
     }
     auto types = valid_op->getOperandTypes();

@@ -105,6 +105,7 @@ def jit(
     extra_library=None,
     verbose: bool = False,
 ):
+    print("----------> torchdynamo.jit()")
     if extra_library is None:
         extra_library = []
     import torch._dynamo as dynamo
@@ -172,7 +173,7 @@ def jit(
             "Lowering TorchFX IR -> Torch Backend IR",
         )
 
-    ir_file = f"{model._get_name()}.{symbol}-torch-to-linanlg.txt" if opts.is_dump_enabled(
+    ir_file = f"{model._get_name()}.{symbol}-torch-to-linalg.txt" if opts.is_dump_enabled(
         "torch-mlir-lowering") else None
     return _lower_mlir_module(verbose, output_type, mlir_module, ir_file)
 
@@ -186,14 +187,17 @@ class TorchDynamoTestConfig(TestConfig):
         self.opts = opts
 
     def compile(self, program: torch.nn.Module) -> torch.nn.Module:
+        print("----------> TorchDynamoTestConfig.compile()")
         return program
 
     def run(self, artifact: torch.nn.Module, trace: Trace) -> Trace:
+        print("----------> TorchDynamoTestConfig.run()")
         result: Trace = []
         timing_logger = print if self.opts.is_debug_timer_enabled() else None
         with DebugTimer("TorchDynamoTestConfig.run()", logger=timing_logger):
             for item in trace:
                 with DebugTimer("JIT", logger=timing_logger):
+                    print("----------> TorchDynamoTestConfig.run(): calling jit()")
                     module = jit(artifact,
                                 item.inputs,
                                 item.symbol,
