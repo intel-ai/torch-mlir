@@ -36,6 +36,9 @@
 #include "stablehlo/conversions/linalg/transforms/Passes.h"
 #endif
 
+#include "torch-mlir/Dialect/GraphDEMO/IR/GraphDEMODialect.h"
+#include "torch-mlir/Dialect/GraphDEMO/Transforms/Passes.h"
+
 #include "TPP/Dialect/Check/BufferizableOpInterfaceImpl.h"
 #include "TPP/Dialect/Check/CheckDialect.h"
 #include "TPP/Dialect/Perf/BufferizableOpInterfaceImpl.h"
@@ -55,6 +58,8 @@ void mlir::torch::registerAllDialects(mlir::DialectRegistry &registry) {
   registry.insert<mlir::xsmm::XsmmDialect>();
   registry.insert<mlir::check::CheckDialect>();
   registry.insert<mlir::perf::PerfDialect>();
+
+  registry.insert<mlir::graph::Graph::GraphDialect>();
 
   // ::imex::registerAllDialects(registry);
   mlir::func::registerInlinerExtension(registry);
@@ -86,6 +91,8 @@ void mlir::torch::registerAllPasses() {
   mlir::torch::registerConversionPasses();
   mlir::torch::onnx_c::registerTorchOnnxToTorchPasses();
   mlir::torch::TMTensor::registerPasses();
+
+  mlir::graph::registerGraphPasses();
 
 #ifdef TORCH_MLIR_ENABLE_STABLEHLO
   mlir::stablehlo::registerStablehloLegalizeToLinalgPass();

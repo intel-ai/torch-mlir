@@ -33,6 +33,9 @@ set(LinkedLibs
   TorchMLIRTorchDialect
   TorchMLIRTorchConversionDialect
 
+  TorchMLIRGraphDialect
+  TorchMLIRGraphPasses
+
   # Dialect passes.
   TorchMLIRTMTensorPasses
   TorchMLIRTorchConversionPasses
