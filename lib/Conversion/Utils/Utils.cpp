@@ -128,7 +128,7 @@ Value createInitTensor(OpBuilder &b, Location loc, ValueRange sizes,
   return b.create<linalg::FillOp>(loc, initElem, initTensor).getResult(0);
 }
 
-Value createZeroInitTensor(OpBuilder &b, Location loc, ValueRange sizes,
+Value   createZeroInitTensor(OpBuilder &b, Location loc, ValueRange sizes,
                            Type elemTy) {
   Value initTensor =
       b.create<tensor::EmptyOp>(loc, getAsOpFoldResult(sizes), elemTy);
