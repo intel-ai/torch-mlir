@@ -14,6 +14,7 @@ from torch_mlir_e2e_test.framework import TestOptions, DebugTimer
 
 from .abc import LinalgOnTensorsBackend
 from .refbackend import RefBackendInvoker
+from .utils import _collect_shared_libs
 
 __all__ = [
     "CpuProtoLinalgOnTensorsBackend",
@@ -94,21 +95,6 @@ def _build_lowering_pipeline(opts: TestOptions):
     return "builtin.module(" + ",".join(passes) + ")"
 
 
-def _find_shared_lib(name):
-    this_file_dir = os.path.dirname(os.path.abspath(__file__))
-    lib_file_path = f"{this_file_dir}/../../torch_mlir/_mlir_libs/{name}"
-    if not os.path.isfile(lib_file_path):
-        raise RuntimeError(f"Cannot find runtime library: {lib_file_path}")
-    return lib_file_path
-
-
-def _collect_shared_libs(opts: TestOptions):
-    shared_libs = []
-    if opts.use_kernels:
-        shared_libs.append(_find_shared_lib("libTorchMLIRKernels.so"))
-    return shared_libs
-
-
 class CpuProtoLinalgOnTensorsBackend(LinalgOnTensorsBackend):
     """Main entry-point for the reference backend."""
 
@@ -138,7 +124,7 @@ class CpuProtoLinalgOnTensorsBackend(LinalgOnTensorsBackend):
                 imported_module,
                 _build_lowering_pipeline(self._opts),
                 "Lowering Linalg-on-Tensors IR to LLVM with RefBackend",
-                ir_file,
+                enable_ir_printing=False, ir_dump_file=ir_file,
             )
         return imported_module
 
