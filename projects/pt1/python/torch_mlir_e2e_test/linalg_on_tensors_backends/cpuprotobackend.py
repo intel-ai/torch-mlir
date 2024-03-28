@@ -22,7 +22,7 @@ __all__ = [
 
 def _build_lowering_pipeline(opts: TestOptions):
     passes = [
-        "fuse-linalg-ops",
+        # "fuse-linalg-ops",
         "func.func(refback-generalize-tensor-pad)",
         "func.func(refback-generalize-tensor-concat)",
         # Apply some optimizations. It would be great if MLIR had more useful
@@ -42,6 +42,7 @@ def _build_lowering_pipeline(opts: TestOptions):
         "sparse-storage-specifier-to-llvm",
         "inline",  # inline sparse helper methods where useful
         # Bufferize.
+        "one-shot-bufferize",
         "func.func(scf-bufferize)",
         "func.func(tm-tensor-bufferize)",
         "func.func(empty-tensor-to-alloc-tensor)",
@@ -51,7 +52,13 @@ def _build_lowering_pipeline(opts: TestOptions):
         "refback-mlprogram-bufferize",
         "func.func(tensor-bufferize)",
         "func.func(finalizing-bufferize)",
-        "func.func(buffer-deallocation)",
+        #"func.func(buffer-deallocation)",
+        "ownership-based-buffer-deallocation",
+        "canonicalize",
+        "buffer-deallocation-simplification",
+        "bufferization-lower-deallocations",
+        "cse",
+        "canonicalize",
         # Munge to make it ExecutionEngine compatible.
         # Specifically, we rewrite calling convention boundaries to be in terms
         # of unranked memref, and we rewrite the return to actually be a

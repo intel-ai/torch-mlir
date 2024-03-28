@@ -95,7 +95,7 @@ def scalarize_tensor_ops_on_scalars(gm: torch.fx.GraphModule):
     # Recompile the forward() method of `gm` from its Graph
     gm.recompile()
 
-
+from torch._inductor.constant_folding import constant_fold
 def jit(
     model: torch.nn.Module,
     example_args: _example_args,
@@ -131,13 +131,21 @@ def jit(
         # way of differentiating between the two.
         assert not _returns_empty_tuple(gm), "encountered graph that does not return anything"
 
-        scalarize_tensor_ops_on_scalars(gm)
         if opts.is_dump_enabled("fx-graph"):
             with open(f"{model._get_name()}.{symbol}-fx-graph.txt", "w") as f:
                 print(gm.graph, file=f)
 
+        with open(f"{model._get_name()}.{symbol}-fx-graph.py", "w") as f:
+                print(gm.code, file=f)
+
+        scalarize_tensor_ops_on_scalars(gm)
+
+        with open(f"{model._get_name()}.{symbol}-fx-graph-after.txt", "w") as f:
+                print(gm.graph, file=f)
+
         nonlocal mlir_module
         *_, model_name, nth_graph = get_aot_compilation_context()
+
         mlir_module = import_fx_graph_as_func(gm.graph, model_name)
 
         if opts.is_dump_enabled("torch-mlir"):
