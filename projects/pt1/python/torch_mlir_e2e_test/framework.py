@@ -167,7 +167,7 @@ class DebugTimer:
 class TestOptions:
     """Test run options."""
 
-    dump_choices = ["all", "fx-graph", "torch-mlir", "linalg-mlir", "llvm-mlir", "torch-mlir-lowering", "linalg-mlir-lowering", "obj"]
+    dump_choices = ["all", "fx-graph", "aten-transform", "torch-mlir", "linalg-mlir", "llvm-mlir", "torch-mlir-lowering", "linalg-mlir-lowering", "obj"]
 
     def __init__(self, *, dumps: List[str] = [], use_kernels=False, debug_timer=False, use_omp=True):
         self.dumps = {opt for opt in dumps}
@@ -176,7 +176,10 @@ class TestOptions:
         self.use_omp = use_omp
 
     def is_dump_enabled(self, dump: str):
-        return dump in self.dumps or "all" in self.dumps
+        if dump != "aten-transform":
+            return dump in self.dumps or "all" in self.dumps
+        else:
+            return dump in self.dumps
 
     def is_debug_timer_enabled(self):
         return self.debug_timer

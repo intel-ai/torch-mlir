@@ -105,3 +105,17 @@ class MobilenetV3Module(torch.nn.Module):
 @register_test_case(module_factory=lambda: MobilenetV3Module())
 def MobilenetV3Module_basic(module, tu: TestUtils):
     module.forward(tu.rand(1, 3, 224, 224))
+
+
+def ResNext():
+    model = models.resnext50_32x4d()
+    model.eval()
+    return model
+
+@register_test_case(module_factory=lambda: ResNext())
+def ResNext_basic(module, tu: TestUtils):
+    # out = module.forward(tu.randint(1, 11, high=13000))
+    out = module.forward(tu.rand(1, 3, 224, 224))
+    # model.forward(input_ids=input_ids.input_ids, attention_mask=input_ids.attention_mask, output_hidden_states=False, use_cache=False)
+    # print("gen tokens: ", gen_tokens)
+    return out
