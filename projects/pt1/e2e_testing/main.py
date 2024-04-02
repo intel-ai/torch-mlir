@@ -113,10 +113,16 @@ Available options:
                         default=False,
                         action="store_true",
                         help="Enable debug timings collection.")
+    parser.add_argument("--aten-transform",
+                        default=False,
+                        action="store_true",
+                        help="Replace aten.add.Tensor aten.add.Scalar, for ResNet like models.")
     return parser
 
 def main():
     args = _get_argparse().parse_args()
+    if args.aten_transform:
+        args.dump.append("aten-transform")
     opts = TestOptions(dumps=args.dump, use_kernels=args.use_kernels, debug_timer=args.enable_timer)
 
     all_test_unique_names = set(
